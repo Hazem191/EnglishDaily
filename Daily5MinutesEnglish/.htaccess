@@ -1,0 +1,13 @@
+# Professional Security for Daily English DB
+# Protect the JSON database from direct downloads
+
+<Files "db.json">
+    Order Deny,Allow
+    Deny from all
+</Files>
+
+# Disable directory listing
+Options -Indexes
+
+# Set UTF-8 encoding
+AddDefaultCharset UTF-8
