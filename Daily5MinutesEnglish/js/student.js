@@ -18,6 +18,7 @@ let answers = {};
 // State tracking for re-renders
 let quizState = 'loading'; // 'playing', 'results', 'completed'
 let cachedResults = null;
+let isSubmitting = false;  // prevents double-submit
 
 document.addEventListener('DOMContentLoaded', () => {
     requireAuth('student', initStudentPage);
@@ -233,7 +234,15 @@ window.prevQuestion = function () {
 };
 
 window.submitQuiz = async function () {
-    console.log("Submitting quiz...");
+    // Prevent double-submit if user taps Finish more than once
+    if (isSubmitting) return;
+    isSubmitting = true;
+
+    // Visually disable the Finish button immediately
+    const finishBtn = document.querySelector('#quiz-area .btn-primary');
+    if (finishBtn) { finishBtn.disabled = true; finishBtn.textContent = 'Submitting...'; }
+
+    console.log('Submitting quiz...');
     // Calculate score
     let score = 0;
     dailyQuestions.forEach(q => {
@@ -260,7 +269,7 @@ window.submitQuiz = async function () {
 
         await userRef.update({ totalScore: currentTotal + score });
 
-        console.log("Quiz submitted successfully. Score:", score);
+        console.log('Quiz submitted successfully. Score:', score);
         hideLoading();
 
         quizState = 'results';
@@ -268,6 +277,8 @@ window.submitQuiz = async function () {
         showResult(score, dailyQuestions.length);
     } catch (e) {
         hideLoading();
+        isSubmitting = false; // allow retry on network error
+        if (finishBtn) { finishBtn.disabled = false; finishBtn.textContent = 'Finish ✓'; }
         console.error('Submit error:', e);
         showToast('Error saving result. Please try again.', 'error');
     }

@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(async (user) => {
         if (!user) { hideLoading(); return; }
         try {
+            // Wait for DB to be fully loaded before reading it (race-condition fix)
+            await DB.initPromise;
             const data = DB.get();
             if (data.users?.admins?.[user.uid]) {
                 window.location.href = 'teacher.html'; return;
@@ -135,11 +137,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const uid = credential.user.uid;
 
                 // All self-registrations are students
+                // Hash the password with SHA-256 before storage (never store plain text)
+                const hashedPw = await hashPassword(password);
                 await rtdb.ref(`users/students/${uid}`).set({
                     id: uid,
                     name,
                     email,
-                    password,       // Plain text storage – acceptable for this local JSON system
+                    password: hashedPw,
                     role: 'student',
                     totalScore: 0,
                     createdAt: Date.now()

@@ -10,12 +10,24 @@ $backupDir = 'backups/';
 
 // CORS & Headers
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type, X-Requested-With");
+header("Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-API-Token");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Content-Type: application/json");
 
 // Handle preflight (OPTIONS)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit;
+}
+
+// ── Auth Guard ──
+// All requests must include the shared API secret token.
+// This token is defined in db-service.js (API_SECRET constant) and must match here.
+define('API_SECRET', 'daily-english-secure-2025-key');
+
+$clientToken = $_SERVER['HTTP_X_API_TOKEN'] ?? '';
+if ($clientToken !== API_SECRET) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthorized — missing or invalid API token']);
     exit;
 }
 
@@ -80,8 +92,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!isset($currentState['users']['students'])) $currentState['users']['students'] = [];
             
             foreach ($inputData['users']['students'] as $id => $user) {
-                // Basic check: don't let students change their role to teacher
-                if (isset($user['role'])) $user['role'] = 'student'; 
+                // Ensure role cannot be escalated via API
+                $user['role'] = 'student';
                 $currentState['users']['students'][$id] = $user;
             }
         }
@@ -99,12 +111,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // 3. Questions & Config (Special Case: Only if an Admin flag is sent?
-        // In this simple version, we'll allow it so the Teacher Dashboard works.
-        // But we guard it from simple 'Student' syncs if we had a token.)
+        // 3. Questions & Config (Teacher-initiated writes)
         if (isset($inputData['questions'])) {
-             // Basic protection: if it's a huge dump, we accept it for now
-             // as the Teacher Dashboard needs to publish questions.
              $currentState['questions'] = $inputData['questions'];
         }
 
@@ -112,17 +120,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $currentState['config'] = $inputData['config'];
         }
 
-        // 4. Protect Admins! Never let the API overwrite the admins section
-        // unless it's a manual edit of db.json. This prevents students from 
-        // escalating themselves.
-        // (We keep the original 'admins' from disk, unless they are missing)
+        // 4. Protect Admins — never overwrite admins section from API payload
+        //    unless it is completely absent (fresh DB scenario).
         if (!isset($currentState['users']['admins']) || empty($currentState['users']['admins'])) {
             if (isset($inputData['users']['admins'])) {
                 $currentState['users']['admins'] = $inputData['users']['admins'];
             }
         }
 
-        // Save back
+        // 5. Auto-rotate backups (keep last 5 only)
+        if (!is_dir($backupDir)) @mkdir($backupDir, 0755, true);
+        $backupFile = $backupDir . 'db_' . date('Y-m-d_H-i-s') . '.json';
+        @file_put_contents($backupFile, json_encode($currentState, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+        $backups = glob($backupDir . 'db_*.json');
+        if ($backups && count($backups) > 5) {
+            usort($backups, fn($a, $b) => filemtime($a) - filemtime($b));
+            foreach (array_slice($backups, 0, count($backups) - 5) as $old) {
+                @unlink($old);
+            }
+        }
+
+        // Save back to db.json
         ftruncate($fp, 0);
         rewind($fp);
         fwrite($fp, json_encode($currentState, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));

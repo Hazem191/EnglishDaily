@@ -1,17 +1,44 @@
 /* ========================================
-   Simplified JSON-Based Data Service
-   Mocking Firebase Realtime DB API
+   JSON-Based Data Service (v8)
+   — SHA-256 Password Hashing
+   — API Secret Token on every request
+   — 30-second server polling (real-time)
+   — MockRef.off() for listener cleanup
+   — requireAuth race condition fixed
    ======================================== */
 
 const DB_KEY = 'daily_english_db';
-const DB_VERSION = '7';   // ← bump this to force a fresh load from db.json
+const DB_VERSION = '8';   // bumped from 7 → triggers migration + password upgrade
 const DB_VER_KEY = 'daily_english_db_version';
+const API_SECRET = 'daily-english-secure-2025-key'; // ← Must match api.php
 
-// Initial structure if empty
+/* ── Password Hashing (SHA-256 via built-in Web Crypto API) ── */
+async function hashPassword(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+}
+
+/** Check whether a string looks like a hex SHA-256 hash */
+function isHashed(str) {
+    return typeof str === 'string' && str.length === 64 && /^[0-9a-f]+$/i.test(str);
+}
+
+/* ── Default / Seed Data ── */
 const defaultData = {
     users: {
         admins: {
-            "admin-main": { id: "admin-main", name: "Admin", email: "Admin@test.com", password: "123456@Ha", role: "teacher" }
+            "admin-main": {
+                id: "admin-main", name: "Admin",
+                email: "Admin@test.com",
+                // plain-text kept here only as a fallback for first login;
+                // it will be auto-upgraded to a hash on first successful sign-in
+                password: "123456@Ha",
+                role: "teacher"
+            }
         },
         students: {}
     },
@@ -23,17 +50,14 @@ const defaultData = {
         "sample-5": { questionText: "Which sentence is correct?", type: "error-correction", options: ["She don't like it", "She doesn't like it", "She not like it", "She no like it"], correctAnswer: "She doesn't like it", createdAt: Date.now() }
     },
     dailyResults: {},
-    config: {
-        quizSize: 5,
-        currentExamDate: null,
-        currentExamQuestions: []
-    }
+    config: { quizSize: 5, currentExamDate: null, currentExamQuestions: [] }
 };
 
-/** High-level DB Controller */
+/* ── High-level DB Controller ── */
 const DB = {
     listeners: [],
     initPromise: null,
+    _pollInterval: null,
 
     async init() {
         if (this.initPromise) return this.initPromise;
@@ -50,41 +74,38 @@ const DB = {
             let remoteData = null;
 
             try {
-                // 1. Try API (PHP/Node)
-                let response = await fetch('api.php');
+                // 1. Try authenticated API call
+                const response = await fetch('api.php', {
+                    headers: { 'X-API-Token': API_SECRET }
+                });
                 if (response.ok) {
                     const text = await response.text();
                     try {
                         remoteData = JSON.parse(text);
-                        console.log("📂 Synced with server (api.php)");
+                        console.log('📂 Synced with server (api.php)');
                     } catch (e) {
-                        console.warn("api.php returned non-JSON content. Likely plain PHP file.");
+                        console.warn('api.php returned non-JSON content.');
                     }
                 }
 
-                // 2. Try direct db.json if API failed or returned nothing
+                // 2. Fallback to direct db.json
                 if (!remoteData || remoteData.error) {
-                    let directRes = await fetch('db.json');
+                    const directRes = await fetch('db.json');
                     if (directRes.ok) {
                         remoteData = await directRes.json();
-                        console.log("📂 Loaded from db.json directly");
+                        console.log('📂 Loaded from db.json directly');
                     }
                 }
             } catch (e) {
-                console.warn("Server sync unavailable. Checking local cache...");
+                console.warn('Server sync unavailable. Using local cache...');
             }
 
             let finalData;
-            // PRESERVE local data during merge
             const currentLocal = localData ? JSON.parse(localData) : null;
 
             if (remoteData && !remoteData.error) {
-                // Merge server with defaults
                 finalData = _deepMergeDefaults(remoteData, defaultData);
-                // ALSO merge with current local to avoid losing pending syncs
-                if (currentLocal) {
-                    finalData = _deepMergeDefaults(currentLocal, finalData);
-                }
+                if (currentLocal) finalData = _deepMergeDefaults(currentLocal, finalData);
             } else if (currentLocal) {
                 finalData = _deepMergeDefaults(currentLocal, defaultData);
             } else {
@@ -114,10 +135,13 @@ const DB = {
         try {
             await fetch('api.php', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Token': API_SECRET
+                },
                 body: JSON.stringify(data)
             });
-        } catch (e) { }
+        } catch (e) { /* silent — offline mode */ }
     },
 
     notify() {
@@ -128,6 +152,43 @@ const DB = {
         window.addEventListener('storage', (e) => {
             if (e.key === DB_KEY) this.notify();
         });
+    },
+
+    /**
+     * Start polling the server every `intervalMs` ms.
+     * Only triggers notify() when dailyResults or students actually changed.
+     * This gives real-time-like behaviour for multi-user shared hosting.
+     */
+    startPolling(intervalMs = 30000) {
+        if (this._pollInterval) clearInterval(this._pollInterval);
+        this._pollInterval = setInterval(async () => {
+            try {
+                const response = await fetch('api.php', {
+                    headers: { 'X-API-Token': API_SECRET }
+                });
+                if (!response.ok) return;
+                const text = await response.text();
+                const remoteData = JSON.parse(text);
+                if (!remoteData || remoteData.error) return;
+
+                const currentLocal = this.get();
+                const remoteResultsStr = JSON.stringify(remoteData.dailyResults);
+                const localResultsStr = JSON.stringify(currentLocal.dailyResults);
+                const remoteStudentsStr = JSON.stringify(remoteData.users?.students);
+                const localStudentsStr = JSON.stringify(currentLocal.users?.students);
+
+                if (remoteResultsStr !== localResultsStr || remoteStudentsStr !== localStudentsStr) {
+                    const merged = _deepMergeDefaults(currentLocal, _deepMergeDefaults(remoteData, defaultData));
+                    localStorage.setItem(DB_KEY, JSON.stringify(merged));
+                    this.notify();
+                    console.log('🔄 Real-time: data refreshed from server');
+                }
+            } catch (e) { /* silent — server unreachable */ }
+        }, intervalMs);
+    },
+
+    stopPolling() {
+        if (this._pollInterval) { clearInterval(this._pollInterval); this._pollInterval = null; }
     },
 
     resolvePath(data, path) {
@@ -191,13 +252,11 @@ function _ensureSeedAccounts(data) {
     if (!data.users) data.users = {};
     if (!data.users.admins) data.users.admins = {};
     if (!data.users.students) data.users.students = {};
-
     if (!data.users.admins['admin-main']) {
         data.users.admins['admin-main'] = {
-            id: 'admin-main',
-            name: 'Admin',
+            id: 'admin-main', name: 'Admin',
             email: 'Admin@test.com',
-            password: '123456@Ha',
+            password: '123456@Ha',   // auto-upgraded to hash on first login
             role: 'teacher'
         };
     }
@@ -209,25 +268,55 @@ window.resetDB = async function () {
     localStorage.removeItem(DB_KEY);
     localStorage.removeItem(DB_VER_KEY);
     localStorage.removeItem('logged_user');
+    DB.initPromise = null;
     await DB.init();
     showToast('Database reset successfully!', 'success');
 };
 
-/** Mock Realtime Database Reference */
+/* ── Mock Realtime Database Reference ── */
 class MockRef {
     constructor(path = '') { this.path = path; }
+
     ref(subPath) { return new MockRef(this.path ? `${this.path}/${subPath}` : subPath); }
-    async once(type) { if (type !== 'value') return null; await DB.initPromise; return DB.snap(this.path); }
-    on(type, callback) {
-        if (type !== 'value') return;
-        DB.listeners.push({ path: this.path, callback });
-        callback(DB.snap(this.path));
+
+    async once(type) {
+        if (type !== 'value') return null;
+        await DB.initPromise;
+        return DB.snap(this.path);
     }
+
+    /**
+     * Subscribe to value changes. Returns the callback reference so it can
+     * be passed to off() later (matching real Firebase behaviour).
+     */
+    on(type, callback) {
+        if (type !== 'value') return callback;
+        // Deduplicate: remove any previous subscription for the exact same path+callback
+        DB.listeners = DB.listeners.filter(l => !(l.path === this.path && l.callback === callback));
+        DB.listeners.push({ path: this.path, callback });
+        callback(DB.snap(this.path)); // immediate first call
+        return callback; // return ref for off()
+    }
+
+    /**
+     * Unsubscribe from value changes.
+     * off('value', callback) removes that specific callback.
+     * off()  or  off('value') removes ALL callbacks for this path.
+     */
+    off(type, callback) {
+        if (!callback) {
+            DB.listeners = DB.listeners.filter(l => l.path !== this.path);
+        } else {
+            DB.listeners = DB.listeners.filter(l => !(l.path === this.path && l.callback === callback));
+        }
+    }
+
     async set(value) {
         const data = DB.get();
         DB.setPath(data, this.path, value);
         await DB.save(data);
     }
+
     async update(updates) {
         const data = DB.get();
         let target = DB.resolvePath(data, this.path);
@@ -235,6 +324,7 @@ class MockRef {
         Object.assign(target, updates);
         await DB.save(data);
     }
+
     async push(value) {
         const id = 'ID_' + Math.random().toString(36).substr(2, 9);
         const data = DB.get();
@@ -244,6 +334,7 @@ class MockRef {
         await DB.save(data);
         return { key: id };
     }
+
     async remove() {
         const data = DB.get();
         const parts = this.path.split('/').filter(p => p);
@@ -258,29 +349,64 @@ class MockRef {
     }
 }
 
-/** Mock Auth Module */
+/* ── Mock Auth Module ── */
 const MockAuth = {
     currentUser: JSON.parse(localStorage.getItem('logged_user')) || null,
+
     onAuthStateChanged(callback) { setTimeout(() => callback(this.currentUser), 50); },
+
     async signInWithEmailAndPassword(email, password) {
         await DB.initPromise;
         const fullData = DB.get();
-        const admins = fullData.users?.admins || {};
-        const students = fullData.users?.students || {};
-        const entry = Object.entries({ ...admins, ...students }).find(([, u]) =>
-            u.email?.toLowerCase().trim() === email.toLowerCase().trim() && u.password === password
+        const allUsers = {
+            ...(fullData.users?.admins || {}),
+            ...(fullData.users?.students || {})
+        };
+
+        // Find by email (case-insensitive)
+        const entry = Object.entries(allUsers).find(([, u]) =>
+            u.email?.toLowerCase().trim() === email.toLowerCase().trim()
         );
-        if (!entry) throw { code: 'auth/wrong-password', message: 'Incorrect email or password.' };
+        if (!entry) throw { code: 'auth/user-not-found', message: 'No account found with this email.' };
+
         const [uid, user] = entry;
+        const storedPw = user.password || '';
+        const hashedInput = await hashPassword(password);
+
+        // Support both hashed (64-char hex) and legacy plain-text passwords
+        const isLegacyPlain = !isHashed(storedPw);
+        const passwordMatch = isLegacyPlain ? storedPw === password : storedPw === hashedInput;
+
+        if (!passwordMatch) throw { code: 'auth/wrong-password', message: 'Incorrect email or password.' };
+
+        // Auto-upgrade legacy plain-text password to SHA-256 hash
+        if (isLegacyPlain && storedPw.length > 0) {
+            try {
+                const upgradeData = DB.get();
+                if (upgradeData.users?.admins?.[uid]) {
+                    upgradeData.users.admins[uid].password = hashedInput;
+                } else if (upgradeData.users?.students?.[uid]) {
+                    upgradeData.users.students[uid].password = hashedInput;
+                }
+                await DB.save(upgradeData);
+                console.log('🔒 Password auto-upgraded to hash for:', email);
+            } catch (e) {
+                console.warn('Password upgrade failed (non-critical):', e);
+            }
+        }
+
         this.currentUser = { uid, email: user.email };
         localStorage.setItem('logged_user', JSON.stringify(this.currentUser));
         return { user: this.currentUser };
     },
+
     async createUserWithEmailAndPassword(email, password) {
         await DB.initPromise;
         const fullData = DB.get();
-        if (!fullData.users) fullData.users = { admins: {}, students: {} };
-        const allUsers = { ...(fullData.users.admins || {}), ...(fullData.users.students || {}) };
+        const allUsers = {
+            ...(fullData.users?.admins || {}),
+            ...(fullData.users?.students || {})
+        };
         if (Object.values(allUsers).find(u => u.email?.toLowerCase() === email.toLowerCase())) {
             throw { code: 'auth/email-already-in-use', message: 'Email already registered.' };
         }
@@ -289,65 +415,108 @@ const MockAuth = {
         localStorage.setItem('logged_user', JSON.stringify(this.currentUser));
         return { user: this.currentUser };
     },
+
     async signOut() {
         this.currentUser = null;
         localStorage.removeItem('logged_user');
         window.location.href = 'login.html';
     },
+
     Persistence: { LOCAL: 'local' },
     setPersistence: () => Promise.resolve()
 };
 
-// --- GLOBAL EXPORTS ---
+/* ── Global Exports ── */
 DB.initPromise = DB.init();
 DB.listenToStorage();
+
+// Start polling once init is done (30 s interval → real-time sync across users)
+DB.initPromise.then(() => DB.startPolling(30000));
 
 window.firebase = { initializeApp: () => { }, auth: () => MockAuth, database: () => new MockRef() };
 window.auth = MockAuth;
 window.rtdb = new MockRef();
+window.hashPassword = hashPassword; // expose for auth.js
 
 window.getTodayString = () => new Date().toISOString().split('T')[0];
 
 window.showToast = (message, type = 'info') => {
-    let c = document.getElementById('toast-container') || document.createElement('div');
-    if (!c.id) { c.id = 'toast-container'; c.className = 'toast-container'; document.body.appendChild(c); }
-    const t = document.createElement('div'); t.className = `toast ${type}`;
-    const i = { success: '✓', error: '✕', info: 'ℹ' };
-    t.innerHTML = `<span>${i[type] || 'ℹ'}</span><span>${message}</span>`;
+    let c = document.getElementById('toast-container');
+    if (!c) {
+        c = document.createElement('div');
+        c.id = 'toast-container';
+        c.className = 'toast-container';
+        document.body.appendChild(c);
+    }
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    const icons = { success: '✓', error: '✕', info: 'ℹ' };
+    t.innerHTML = `<span>${icons[type] || 'ℹ'}</span><span>${message}</span>`;
     c.appendChild(t);
     setTimeout(() => { t.classList.add('exit'); setTimeout(() => t.remove(), 300); }, 3500);
 };
 
 window.showLoading = () => {
-    let o = document.getElementById('loading-overlay') || document.createElement('div');
-    if (!o.id) { o.id = 'loading-overlay'; o.className = 'spinner-overlay'; o.innerHTML = '<div class="spinner"></div>'; document.body.appendChild(o); }
+    let o = document.getElementById('loading-overlay');
+    if (!o) {
+        o = document.createElement('div');
+        o.id = 'loading-overlay';
+        o.className = 'spinner-overlay';
+        o.innerHTML = '<div class="spinner"></div>';
+        document.body.appendChild(o);
+    }
     o.style.display = 'flex';
 };
-window.hideLoading = () => { const o = document.getElementById('loading-overlay'); if (o) o.style.display = 'none'; };
+
+window.hideLoading = () => {
+    const o = document.getElementById('loading-overlay');
+    if (o) o.style.display = 'none';
+};
 
 window.getInitials = (n) => !n ? '?' : n.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
+/**
+ * requireAuth — Fixed race condition:
+ * Always awaits DB.initPromise before reading user data so the DB is
+ * guaranteed to be populated before role checks run.
+ */
 window.requireAuth = (role, cb) => {
     showLoading();
     auth.onAuthStateChanged(async (u) => {
         if (!u) { window.location.href = 'login.html'; return; }
+
+        // Wait for DB to finish its initial load from the server
+        await DB.initPromise;
+
         const d = DB.get();
-        const userData = (role === 'teacher') ? d.users?.admins?.[u.uid] : d.users?.students?.[u.uid];
-        if (!userData) {
-            // Check cross-role (maybe student trying to enter admin panel)
-            const other = (role === 'teacher') ? d.users?.students?.[u.uid] : d.users?.admins?.[u.uid];
-            if (other) { window.location.href = (role === 'teacher') ? 'student.html' : 'teacher.html'; return; }
-            auth.signOut(); return;
+        const isAdmin   = !!d.users?.admins?.[u.uid];
+        const isStudent = !!d.users?.students?.[u.uid];
+
+        if (!isAdmin && !isStudent) {
+            auth.signOut();
+            return;
         }
-        hideLoading(); cb({ id: u.uid, ...userData });
+
+        const actualRole = isAdmin ? 'teacher' : 'student';
+
+        if (role && actualRole !== role) {
+            window.location.href = actualRole === 'teacher' ? 'teacher.html' : 'student.html';
+            return;
+        }
+
+        const userData = isAdmin ? d.users.admins[u.uid] : d.users.students[u.uid];
+        hideLoading();
+        cb({ id: u.uid, ...userData, role: actualRole });
     });
 };
 
 window.exportDB = () => {
     const d = DB.get();
     const blob = new Blob([JSON.stringify(d, null, 4)], { type: 'application/json' });
-    const u = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = u; a.download = 'db.json'; a.click();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'db.json'; a.click();
+    URL.revokeObjectURL(url);
 };
 
 window.getOrGenerateDailyExam = async () => {
@@ -358,7 +527,9 @@ window.getOrGenerateDailyExam = async () => {
     const allQsMap = d.questions || {};
 
     if (cfg.currentExamDate === today && cfg.currentExamQuestions?.length > 0) {
-        const valid = cfg.currentExamQuestions.map(id => allQsMap[id] ? { id, ...allQsMap[id] } : null).filter(q => q);
+        const valid = cfg.currentExamQuestions
+            .map(id => allQsMap[id] ? { id, ...allQsMap[id] } : null)
+            .filter(q => q);
         if (valid.length > 0) return valid;
     }
 
@@ -377,7 +548,8 @@ window.getOrGenerateDailyExam = async () => {
 
 function _seededShuffle(array, seed) {
     const copy = [...array];
-    let h = 0; for (let i = 0; i < seed.length; i++) h = (h << 5) - h + seed.charCodeAt(i) | 0;
+    let h = 0;
+    for (let i = 0; i < seed.length; i++) h = (h << 5) - h + seed.charCodeAt(i) | 0;
     const rand = () => { h ^= h << 13; h ^= h >> 17; h ^= h << 5; return (h >>> 0) / 4294967296; };
     for (let i = copy.length - 1; i > 0; i--) {
         const j = Math.floor(rand() * (i + 1));
@@ -402,4 +574,4 @@ window.setQuizSize = async (n) => {
     await DB.save(d);
 };
 
-console.log("🚀 Premium DB Service Loaded");
+console.log('🚀 DB Service v8 — Secured | Hashed Passwords | Server Polling');

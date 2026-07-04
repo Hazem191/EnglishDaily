@@ -3,9 +3,9 @@
         "admins": {
             "admin-1": {
                 "id": "admin-1",
-                "name": "Admin Teacher",
-                "email": "Admin@test.com",
-                "password": "123456@Ha",
+                "name": "Ms Shrouk Omran",
+                "email": "Shrouk@admin.com",
+                "password": "Shrouk@2003",
                 "role": "teacher"
             }
         },

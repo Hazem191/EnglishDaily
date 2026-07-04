@@ -6,6 +6,21 @@ let currentTeacher = null;
 let distributionChart = null;
 let currentTab = 'overview';
 
+/* ========================================
+   Listener Manager — prevents memory leaks
+   Tracks active on() listeners per path and
+   calls off() before re-subscribing.
+   ======================================== */
+const _activeListeners = {};
+
+function managedOn(path, callback) {
+    if (_activeListeners[path]) {
+        rtdb.ref(path).off('value', _activeListeners[path]);
+    }
+    _activeListeners[path] = callback;
+    rtdb.ref(path).on('value', callback);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     requireAuth('teacher', initTeacherPage);
 });
@@ -49,20 +64,20 @@ function showTab(tabName) {
 function setupRealtimeStats() {
     const today = getTodayString();
 
-    rtdb.ref('questions').on('value', (snap) => {
+    managedOn('questions', (snap) => {
         const count = snap.numChildren();
         const el = document.getElementById('stat-questions');
         if (el) el.textContent = count;
         generateDistributionChart(snap.val());
     });
 
-    rtdb.ref('users/students').on('value', (snap) => {
+    managedOn('users/students', (snap) => {
         const count = snap.numChildren();
         const el = document.getElementById('stat-students');
         if (el) el.textContent = count;
     });
 
-    rtdb.ref('dailyResults').on('value', (snap) => {
+    managedOn('dailyResults', (snap) => {
         let todayCount = 0, totalScore = 0;
         const val = snap.val() || {};
         Object.values(val).forEach(userResults => {
@@ -247,7 +262,8 @@ window.loadQuestionsList = function () {
     if (!container) return;
     container.innerHTML = '<div class="spinner" style="margin:40px auto;"></div>';
 
-    rtdb.ref('questions').on('value', (snap) => {
+    // managedOn prevents duplicate listeners each time this tab is opened
+    managedOn('questions', (snap) => {
         if (!snap.exists()) {
             container.innerHTML = '<p class="text-center text-muted py-40">No questions yet. Add some!</p>';
             return;
@@ -297,7 +313,8 @@ function loadStudentsList() {
     if (!container) return;
     container.innerHTML = '<div class="spinner" style="margin:40px auto;"></div>';
 
-    rtdb.ref('users/students').on('value', async (snap) => {
+    // managedOn prevents duplicate listeners each time this tab is opened
+    managedOn('users/students', async (snap) => {
         if (!snap.exists()) {
             container.innerHTML = '<p class="text-center text-muted py-40">No students registered yet.</p>';
             return;
@@ -391,8 +408,10 @@ function loadExamBuilder() {
         Object.entries(allQuestions).forEach(([qid, q]) => {
             const checked = selectedIds.includes(qid);
             html += `
-                <div class="question-picker-row ${checked ? 'selected' : ''}" data-qid="${qid}" onclick="toggleQuestionSelection('${qid}', this)">
-                    <input type="checkbox" value="${qid}" ${checked ? 'checked' : ''} onclick="event.stopPropagation();" onchange="toggleQuestionSelection('${qid}', this.closest('.question-picker-row'))">
+                <div class="question-picker-row ${checked ? 'selected' : ''}" data-qid="${qid}" onclick="toggleQuestionPick('${qid}', this)">
+                    <input type="checkbox" value="${qid}" ${checked ? 'checked' : ''}
+                        onclick="event.stopPropagation()"
+                        onchange="onCheckboxChange(this)">
                     <div style="flex:1;">
                         <span class="tag type-${q.type}" style="margin-bottom:4px; display:inline-block;">${q.type}</span>
                         <div style="font-size:0.9rem;">${escapeHTML(q.questionText)}</div>
@@ -412,10 +431,25 @@ function loadExamBuilder() {
     container.innerHTML = html;
 }
 
-window.toggleQuestionSelection = function (qid, rowEl) {
+/**
+ * Called when user clicks the ROW (not the checkbox directly).
+ * Toggles the checkbox state and syncs the visual selection.
+ */
+window.toggleQuestionPick = function (qid, rowEl) {
     const checkbox = rowEl.querySelector('input[type=checkbox]');
-    if (checkbox) { checkbox.checked = !checkbox.checked; }
-    rowEl.classList.toggle('selected', checkbox?.checked);
+    if (!checkbox) return;
+    checkbox.checked = !checkbox.checked;
+    rowEl.classList.toggle('selected', checkbox.checked);
+    updateSelectedCount();
+};
+
+/**
+ * Called by the checkbox's onchange event (checkbox clicked directly).
+ * The browser has already toggled checked — just sync the visual state.
+ */
+window.onCheckboxChange = function (checkbox) {
+    const row = checkbox.closest('.question-picker-row');
+    if (row) row.classList.toggle('selected', checkbox.checked);
     updateSelectedCount();
 };
 
