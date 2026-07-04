@@ -33,10 +33,10 @@ const defaultData = {
         admins: {
             "admin-main": {
                 id: "admin-main", name: "Admin",
-                email: "Admin@test.com",
+                email: "Shrouk@Admin.com",
                 // plain-text kept here only as a fallback for first login;
                 // it will be auto-upgraded to a hash on first successful sign-in
-                password: "123456@Ha",
+                password: "Shrouk@2003",
                 role: "teacher"
             }
         },
@@ -255,8 +255,8 @@ function _ensureSeedAccounts(data) {
     if (!data.users.admins['admin-main']) {
         data.users.admins['admin-main'] = {
             id: 'admin-main', name: 'Admin',
-            email: 'Admin@test.com',
-            password: '123456@Ha',   // auto-upgraded to hash on first login
+            email: 'Shrouk@Admin.com',
+            password: 'Shrouk@2003',   // auto-upgraded to hash on first login
             role: 'teacher'
         };
     }

@@ -30,6 +30,62 @@ async function initTeacherPage(userData) {
     const navName = document.getElementById('nav-user-name');
     if (navName) navName.textContent = userData.name;
 
+
+
+    const addTeacherForm = document.getElementById('add-teacher-form');
+    if (addTeacherForm) {
+        addTeacherForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('teacher-name').value.trim();
+            const email = document.getElementById('teacher-email').value.trim();
+            const password = document.getElementById('teacher-password').value;
+            const btn = document.getElementById('btn-add-teacher');
+
+            if (!name || !email || !password) return;
+            if (password.length < 6) {
+                showToast('Password must be at least 6 characters.', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner spinner-sm"></div> Saving...';
+
+            try {
+                // Ensure email is unique across all users
+                const allUsers = DB.get().users || {};
+                const admins = allUsers.admins || {};
+                const students = allUsers.students || {};
+                
+                const emailExists = Object.values(admins).concat(Object.values(students))
+                    .some(u => u.email?.toLowerCase() === email.toLowerCase());
+                
+                if (emailExists) {
+                    throw new Error('Email is already registered in the system.');
+                }
+
+                const uid = 'admin-' + Math.random().toString(36).substr(2, 9);
+                const hashedPw = await hashPassword(password);
+                
+                await rtdb.ref(`users/admins/${uid}`).set({
+                    id: uid,
+                    name,
+                    email,
+                    password: hashedPw,
+                    role: 'teacher',
+                    createdAt: Date.now()
+                });
+
+                showToast('Teacher account created successfully!', 'success');
+                addTeacherForm.reset();
+            } catch (error) {
+                showToast(error.message || 'Error creating account', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = window.ui && window.ui.currentLang === 'ar' ? 'إضافة مدرس' : 'Add Teacher';
+            }
+        });
+    }
+
     setupDashboardTabs();
     setupRealtimeStats();
     setupQuestionForm();

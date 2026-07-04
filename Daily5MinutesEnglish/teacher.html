@@ -236,6 +236,25 @@
                                 data-en="🗑 Wipe Results" data-ar="🗑 مسح النتائج">🗑 Wipe Results</button>
                         </div>
                     </div>
+
+                    <div class="feature-card mt-4">
+                        <h3 class="mb-2" data-en="Add Teacher Account" data-ar="إضافة حساب مدرس">Add Teacher Account</h3>
+                        <p class="text-muted mb-4" data-en="Create a new teacher/admin account." data-ar="إنشاء حساب مدرس/مسؤول جديد.">Create a new teacher/admin account.</p>
+                        <form id="add-teacher-form">
+                            <div class="row g-3">
+                                <div class="col-md-5">
+                                    <input type="text" id="teacher-name" class="form-input" required placeholder="Name" data-en="Name" data-ar="الاسم">
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="email" id="teacher-email" class="form-input" required placeholder="Email" data-en="Email" data-ar="البريد الإلكتروني">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="password" id="teacher-password" class="form-input" required placeholder="Password" minlength="6" data-en="Password" data-ar="كلمة المرور">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary mt-3" id="btn-add-teacher" data-en="Add Teacher" data-ar="إضافة مدرس">Add Teacher</button>
+                        </form>
+                    </div>
                 </div>
 
             </div>
