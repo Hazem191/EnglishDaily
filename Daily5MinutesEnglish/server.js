@@ -4,6 +4,13 @@ const path = require('path');
 const app = express();
 const PORT = 3000;
 
+/**
+ * DEV-ONLY static server.
+ * WARNING: This serves db.json without authentication or file locking.
+ * For production and multi-user sync, use PHP: `php -S localhost:8080`
+ * which enables the secured api.php bridge. See README.md.
+ */
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(__dirname));
 

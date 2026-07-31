@@ -1,3 +1,7 @@
+# NOTE: Production deployment should use Apache + PHP (api.php) for data sync.
+# This Render config is for optional Node static hosting only — sync features
+# require api.php. See README.md for PHP deployment instructions.
+
 services:
   - type: web
     name: daily5minutesenglish
@@ -5,6 +9,3 @@ services:
     plan: free
     buildCommand: npm install
     startCommand: node server.js
-    envVars:
-      - key: FIREBASE_API_KEY
-        sync: false

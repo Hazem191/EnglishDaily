@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Check Admin
                 const adminSnap = await rtdb.ref(`users/admins/${uid}`).once('value');
                 if (adminSnap.exists()) {
-                    showToast('Welcome back, Teacher! 🎓', 'success');
+                    showToast('Welcome back.', 'success');
                     setTimeout(() => window.location.href = 'teacher.html', 600);
                     return;
                 }
@@ -79,22 +79,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const studentSnap = await rtdb.ref(`users/students/${uid}`).once('value');
                 if (studentSnap.exists()) {
                     const name = studentSnap.val().name || 'Student';
-                    showToast(`Welcome back, ${name}! 👋`, 'success');
+                    showToast(`Welcome back, ${name}.`, 'success');
                     setTimeout(() => window.location.href = 'student.html', 600);
                     return;
                 }
 
-                errorEl.textContent = 'Account found but profile missing.';
+                errorEl.textContent = 'Incorrect email or password.';
+                auth.signOut();
             } catch (error) {
                 console.error('Login error:', error);
                 const msgs = {
-                    'auth/user-not-found': 'No account found with this email.',
                     'auth/wrong-password': 'Incorrect email or password.',
                     'auth/invalid-email': 'Invalid email address.',
                     'auth/too-many-requests': 'Too many attempts. Try again later.',
                     'auth/invalid-credential': 'Incorrect email or password.',
+                    'auth/user-not-found': 'Incorrect email or password.',
                 };
-                errorEl.textContent = msgs[error.code] || `Login failed: ${error.message}`;
+                errorEl.textContent = msgs[error.code] || 'Incorrect email or password.';
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<span data-en="Ready to Learn →" data-ar="بدء التعلم ←">Ready to Learn →</span>';
@@ -123,9 +124,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Simple validation: min 6 chars
             if (password.length < 6) {
-                errorEl.textContent = 'Password must be at least 6 characters.';
+                errorEl.textContent = window.ui?.lang === 'ar'
+                    ? 'يجب أن تكون كلمة المرور 6 أحرف على الأقل.'
+                    : 'Password must be at least 6 characters.';
+                return;
+            }
+
+            if (confirmPassword !== undefined && password !== confirmPassword) {
+                errorEl.textContent = window.ui?.lang === 'ar'
+                    ? 'كلمتا المرور غير متطابقتين.'
+                    : 'Passwords do not match.';
                 return;
             }
 
@@ -149,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     createdAt: Date.now()
                 });
 
-                showToast('Account created! Welcome aboard 🎉', 'success');
+                showToast('Account created. Redirecting…', 'success');
                 setTimeout(() => window.location.href = 'student.html', 800);
 
             } catch (error) {

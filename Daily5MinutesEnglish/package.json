@@ -4,11 +4,13 @@
   "description": "Daily 5 Minutes English App",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "firebase": "^9.22.0",
-    "cors": "^2.8.5"
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
   }
 }

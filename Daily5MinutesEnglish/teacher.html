@@ -5,13 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teacher Panel - Daily English</title>
+    <link rel="icon" href="gemini-svg.svg" type="image/svg+xml">
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet">
-
-    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -61,8 +56,7 @@
     <nav class="navbar">
         <div class="container nav-content">
             <a href="index.html" class="brand">
-                <div class="brand-dot"></div>
-                <span data-en="Daily English" data-ar="ديلي إنجلش">Daily English</span>
+                <img src="gemini-svg.svg" alt="Daily English" class="brand-logo-full" id="brand-logo">
             </a>
             <div class="nav-links">
                 <a href="index.html" class="nav-link" data-en="Home" data-ar="الرئيسية">Home</a>
@@ -86,11 +80,10 @@
         <header class="animate-up" style="margin-bottom:40px;">
             <div class="flex-between flex-wrap gap-20">
                 <div>
-                    <h1 class="hero-title mb-1" style="font-size:3rem;" data-en="Teacher Hub" data-ar="مركز المعلم">
-                        Teacher Hub</h1>
-                    <p class="text-muted" data-en="Empowering English learning, one challenge at a time."
-                        data-ar="تمكين تعلم الإنجليزية، تحدٍ تلو الآخر.">Empowering English learning, one challenge at a
-                        time.</p>
+                    <h1 class="hero-title mb-1" style="font-size:2rem;" data-en="Teacher panel" data-ar="لوحة المعلم">
+                        Teacher panel</h1>
+                    <p class="text-muted" data-en="Publish today's quiz and review student scores."
+                        data-ar="انشر اختبار اليوم وراجع درجات الطلاب.">Publish today's quiz and review student scores.</p>
                 </div>
                 <div id="exam-settings-summary"></div>
             </div>
@@ -120,26 +113,35 @@
 
             <!-- Sidebar -->
             <aside class="sidebar">
-                <button class="side-nav-btn dashboard-tab" data-tab="overview" data-en="📊 Insights"
-                    data-ar="📊 الإحصائيات">📊 Insights</button>
-                <button class="side-nav-btn dashboard-tab" data-tab="exam-builder" data-en="🗓️ Daily Exam"
-                    data-ar="🗓️ امتحان اليوم">🗓️ Daily Exam</button>
+                <button class="side-nav-btn dashboard-tab" data-tab="overview" data-en="Overview"
+                    data-ar="نظرة عامة">Overview</button>
+                <button class="side-nav-btn dashboard-tab" data-tab="exam-builder" data-en="Daily exam"
+                    data-ar="امتحان اليوم">Daily exam</button>
                 <div style="margin:16px 0; border-top:1px solid var(--border);"></div>
-                <button class="side-nav-btn dashboard-tab" data-tab="add-question" data-en="➕ New Question"
-                    data-ar="➕ سؤال جديد">➕ New Question</button>
-                <button class="side-nav-btn dashboard-tab" data-tab="view-questions" data-en="📋 Manage Bank"
-                    data-ar="📋 إدارة البنك">📋 Manage Bank</button>
-                <button class="side-nav-btn dashboard-tab" data-tab="students" data-en="🎓 Learners"
-                    data-ar="🎓 المتعلمون">🎓 Learners</button>
+                <button class="side-nav-btn dashboard-tab" data-tab="add-question" data-en="Add question"
+                    data-ar="سؤال جديد">Add question</button>
+                <button class="side-nav-btn dashboard-tab" data-tab="view-questions" data-en="Question bank"
+                    data-ar="بنك الأسئلة">Question bank</button>
+                <button class="side-nav-btn dashboard-tab" data-tab="students" data-en="Students"
+                    data-ar="الطلاب">Students</button>
                 <div style="margin:16px 0; border-top:1px solid var(--border);"></div>
-                <button class="side-nav-btn dashboard-tab" data-tab="database" id="btn-database" data-en="⚙️ System"
-                    data-ar="⚙️ النظام">⚙️ System</button>
+                <button class="side-nav-btn dashboard-tab" data-tab="database" id="btn-database" data-en="Settings"
+                    data-ar="الإعدادات">Settings</button>
             </aside>
 
             <!-- Content Area -->
             <div class="content-area">
 
                 <div id="tab-overview" class="tab-content">
+                    <div class="feature-card mb-4">
+                        <h3 data-en="Today's attendance" data-ar="حضور اليوم">Today's attendance</h3>
+                        <p class="text-muted" style="margin-bottom: 20px;"
+                            data-en="See who completed today's quiz and who is still pending."
+                            data-ar="اعرف من أكمل اختبار اليوم ومن لم يكمل بعد.">See who completed today's quiz and who is still pending.</p>
+                        <div id="attendance-report">
+                            <div class="spinner" style="margin: 20px auto;"></div>
+                        </div>
+                    </div>
                     <div class="feature-card">
                         <h3 data-en="Content Mix" data-ar="مزيج المحتوى">Content Mix</h3>
                         <div id="type-distribution-chart" style="margin-top:24px; min-height:300px;"></div>
@@ -208,7 +210,7 @@
 
                             <div id="form-error" class="form-error"></div>
                             <button type="submit" id="btn-add-question" class="btn btn-primary btn-lg w-100 mt-4"
-                                data-en="🚀 Publish to Bank" data-ar="🚀 نشر في البنك">🚀 Publish to Bank</button>
+                                data-en="Save question" data-ar="حفظ السؤال">Save question</button>
                         </form>
                     </div>
                 </div>
@@ -230,8 +232,8 @@
                         <div class="d-flex gap-3 flex-wrap">
                             <button onclick="exportDB()" class="btn btn-primary" data-en="⬇ Backup JSON"
                                 data-ar="⬇ نسخة احتياطية">⬇ Backup JSON</button>
-                            <button onclick="resetTodayExam()" class="btn btn-outline" data-en="🔄 Refresh Today's Exam"
-                                data-ar="🔄 تجديد امتحان اليوم">🔄 Refresh Today's Exam</button>
+                            <button onclick="resetTodayExam()" class="btn btn-outline" data-en="Reset today's exam"
+                                data-ar="إعادة تعيين امتحان اليوم">Reset today's exam</button>
                             <button onclick="clearAllResults()" class="btn btn-outline text-danger"
                                 data-en="🗑 Wipe Results" data-ar="🗑 مسح النتائج">🗑 Wipe Results</button>
                         </div>

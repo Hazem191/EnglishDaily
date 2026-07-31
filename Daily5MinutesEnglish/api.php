@@ -10,7 +10,7 @@ $backupDir = 'backups/';
 
 // CORS & Headers
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-API-Token");
+header("Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-API-Token, X-Requesting-Admin");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Content-Type: application/json");
 
@@ -120,11 +120,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $currentState['config'] = $inputData['config'];
         }
 
-        // 4. Protect Admins — never overwrite admins section from API payload
-        //    unless it is completely absent (fresh DB scenario).
-        if (!isset($currentState['users']['admins']) || empty($currentState['users']['admins'])) {
-            if (isset($inputData['users']['admins'])) {
-                $currentState['users']['admins'] = $inputData['users']['admins'];
+        // 4. Merge Admins — upsert teacher accounts; force role to teacher
+        if (isset($inputData['users']) && isset($inputData['users']['admins'])) {
+            if (!isset($currentState['users'])) $currentState['users'] = [];
+            if (!isset($currentState['users']['admins'])) $currentState['users']['admins'] = [];
+
+            $requestingAdmin = $_SERVER['HTTP_X_REQUESTING_ADMIN'] ?? '';
+
+            foreach ($inputData['users']['admins'] as $id => $admin) {
+                $isNew = !isset($currentState['users']['admins'][$id]);
+                if ($isNew) {
+                    // New teacher accounts require an authenticated existing admin
+                    if (!$requestingAdmin || !isset($currentState['users']['admins'][$requestingAdmin])) {
+                        continue;
+                    }
+                }
+                $admin['role'] = 'teacher';
+                $currentState['users']['admins'][$id] = $admin;
             }
         }
 

@@ -8,7 +8,7 @@
    ======================================== */
 
 const DB_KEY = 'daily_english_db';
-const DB_VERSION = '8';   // bumped from 7 → triggers migration + password upgrade
+const DB_VERSION = '9';   // bumped: plaintext password migration at init
 const DB_VER_KEY = 'daily_english_db_version';
 const API_SECRET = 'daily-english-secure-2025-key'; // ← Must match api.php
 
@@ -34,9 +34,7 @@ const defaultData = {
             "admin-main": {
                 id: "admin-main", name: "Admin",
                 email: "Shrouk@Admin.com",
-                // plain-text kept here only as a fallback for first login;
-                // it will be auto-upgraded to a hash on first successful sign-in
-                password: "Shrouk@2003",
+                password: "",   // set in db.json; auto-hashed at init via _upgradePlaintextPasswords
                 role: "teacher"
             }
         },
@@ -113,8 +111,12 @@ const DB = {
             }
 
             _ensureSeedAccounts(finalData);
+            const upgraded = await _upgradePlaintextPasswords(finalData);
             localStorage.setItem(DB_KEY, JSON.stringify(finalData));
             localStorage.setItem(DB_VER_KEY, DB_VERSION);
+            if (upgraded) {
+                try { await DB.save(finalData); } catch (e) { console.warn('Password upgrade sync failed:', e); }
+            }
             this.notify();
         })();
 
@@ -133,12 +135,20 @@ const DB = {
 
     async syncWithServer(data) {
         try {
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-API-Token': API_SECRET
+            };
+            try {
+                const loggedUser = JSON.parse(localStorage.getItem('logged_user') || 'null');
+                if (loggedUser?.uid && data?.users?.admins?.[loggedUser.uid]) {
+                    headers['X-Requesting-Admin'] = loggedUser.uid;
+                }
+            } catch (_) { /* ignore */ }
+
             await fetch('api.php', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-API-Token': API_SECRET
-                },
+                headers,
                 body: JSON.stringify(data)
             });
         } catch (e) { /* silent — offline mode */ }
@@ -252,16 +262,23 @@ function _ensureSeedAccounts(data) {
     if (!data.users) data.users = {};
     if (!data.users.admins) data.users.admins = {};
     if (!data.users.students) data.users.students = {};
-    if (!data.users.admins['admin-main']) {
-        data.users.admins['admin-main'] = {
-            id: 'admin-main', name: 'Admin',
-            email: 'Shrouk@Admin.com',
-            password: 'Shrouk@2003',   // auto-upgraded to hash on first login
-            role: 'teacher'
-        };
-    }
     if (!data.config) data.config = { quizSize: 5, currentExamDate: null, currentExamQuestions: [] };
     if (!data.dailyResults) data.dailyResults = {};
+}
+
+/** Hash any legacy plain-text passwords in user records at load time */
+async function _upgradePlaintextPasswords(data) {
+    if (!data.users) return false;
+    let upgraded = false;
+    const upgradeUser = async (user) => {
+        if (user?.password && !isHashed(user.password)) {
+            user.password = await hashPassword(user.password);
+            upgraded = true;
+        }
+    };
+    for (const u of Object.values(data.users.admins || {})) await upgradeUser(u);
+    for (const u of Object.values(data.users.students || {})) await upgradeUser(u);
+    return upgraded;
 }
 
 window.resetDB = async function () {
@@ -456,6 +473,50 @@ window.showToast = (message, type = 'info') => {
     setTimeout(() => { t.classList.add('exit'); setTimeout(() => t.remove(), 300); }, 3500);
 };
 
+window.showConfirmDialog = ({
+    title = 'Confirm',
+    message = '',
+    confirmText = 'Confirm',
+    cancelText = 'Cancel',
+    danger = false
+} = {}) => new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'confirm-overlay';
+    overlay.innerHTML = `
+        <div class="confirm-dialog" role="dialog" aria-modal="true">
+            <h3>${escapeHTML(title)}</h3>
+            <p>${escapeHTML(message)}</p>
+            <div class="confirm-actions">
+                <button type="button" class="btn btn-outline" data-action="cancel">${escapeHTML(cancelText)}</button>
+                <button type="button" class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-action="confirm">${escapeHTML(confirmText)}</button>
+            </div>
+        </div>`;
+
+    const close = (result) => {
+        overlay.remove();
+        document.removeEventListener('keydown', onKeyDown);
+        resolve(result);
+    };
+
+    const onKeyDown = (e) => {
+        if (e.key === 'Escape') close(false);
+    };
+
+    overlay.querySelector('[data-action="cancel"]').addEventListener('click', () => close(false));
+    overlay.querySelector('[data-action="confirm"]').addEventListener('click', () => close(true));
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
+    document.addEventListener('keydown', onKeyDown);
+    document.body.appendChild(overlay);
+    overlay.querySelector('[data-action="confirm"]').focus();
+});
+
+function escapeHTML(str) {
+    if (!str) return '';
+    const p = document.createElement('p');
+    p.textContent = str;
+    return p.innerHTML;
+}
+
 window.showLoading = () => {
     let o = document.getElementById('loading-overlay');
     if (!o) {
@@ -564,7 +625,7 @@ window.setDailyExam = async (ids) => {
     d.config.currentExamDate = getTodayString();
     d.config.currentExamQuestions = ids;
     await DB.save(d);
-    showToast('Exam Published Successfully! 🚀', 'success');
+    showToast('Exam published.', 'success');
 };
 
 window.setQuizSize = async (n) => {

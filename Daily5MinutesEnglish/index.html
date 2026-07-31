@@ -1,169 +1,279 @@
 <html lang="en" dir="ltr">
 
+
+
 <head>
+
   <meta charset="UTF-8">
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daily English - Master English in 5 Minutes a Day</title>
 
-  <!-- SEO & Meta Tags -->
+  <title>Daily English — 5-minute practice</title>
+  <link rel="icon" href="gemini-svg.svg" type="image/svg+xml">
+
+
+
   <meta name="description"
-    content="Improve your English skills with daily 5-minute challenges. Vocabulary, grammar, and sentence ordering drills for all levels.">
-  <meta name="keywords" content="learn english, english quiz, daily english, grammar practice, vocabulary builder">
-  <meta property="og:title" content="Daily English - 5 Minute Mastery">
-  <meta property="og:description" content="Level up your English every day with fun, interactive quizzes.">
+
+    content="Daily English quizzes for grammar and vocabulary. Five minutes a day, set by your teacher.">
+
+  <meta property="og:title" content="Daily English">
+
+  <meta property="og:description" content="Short daily English practice for students.">
+
   <meta property="og:type" content="website">
+  <meta property="og:image" content="gemini-svg.svg">
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
-    rel="stylesheet">
 
-  <!-- Bootstrap 5 -->
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
+
+
   <link rel="stylesheet" href="css/style.css">
+
   <script src="js/db-service.js"></script>
+
   <script src="js/ui-sync.js" defer></script>
+
 </head>
+
+
 
 <body>
 
-  <!-- Navbar -->
+
+
   <nav class="navbar">
+
     <div class="container nav-content">
+
       <a href="index.html" class="brand">
-        <div class="brand-dot"></div>
-        <span data-en="Daily English" data-ar="ديلي إنجلش">Daily English</span>
+
+        <img src="gemini-svg.svg" alt="Daily English" class="brand-logo-full" id="brand-logo">
+
       </a>
+
       <div class="nav-links">
+
         <a href="leaderboard.html" class="nav-link" data-en="Rankings" data-ar="الترتيب">Rankings</a>
+
         <div class="d-flex align-items-center gap-2">
-          <button class="control-btn" id="theme-toggle">🌙</button>
+
+          <button class="control-btn" id="theme-toggle" title="Toggle theme">Aa</button>
+
           <button class="control-btn" id="lang-toggle">AR</button>
-          <a href="login.html" class="btn btn-primary btn-sm ms-2" id="nav-btn" data-en="Get Started" data-ar="دخول">Get
-            Started</a>
+
+          <a href="login.html" class="btn btn-primary btn-sm ms-2" id="nav-btn" data-en="Sign in" data-ar="دخول">Sign in</a>
+
         </div>
+
       </div>
+
     </div>
+
   </nav>
 
-  <!-- Hero Section -->
+
+
   <header class="hero">
-    <div class="hero-decoration">
-      <div class="circle circle-1"></div>
-      <div class="circle circle-2"></div>
-    </div>
 
-    <div class="container text-center" style="position:relative; z-index:10;">
-      <div class="hero-badge animate-up delay-1" data-en="✨ Micro-Learning Reimagined" data-ar="✨ مستقبل التعلم الذكي">
-        ✨ Micro-Learning Reimagined
-      </div>
+    <div class="container" style="position:relative; z-index:10;">
 
-      <h1 class="hero-title animate-up delay-2">
-        <span data-en="Your English Journey," data-ar="رحلتك لتعلم الإنجليزية">Your English Journey,</span><br>
-        <span class="gradient-text" data-en="5 Minutes x Day" data-ar="5 دقائق يومياً">5 Minutes x Day</span>
-      </h1>
+      <p class="hero-eyebrow" data-en="English practice · 5 min/day" data-ar="تمرين إنجليزي · 5 دقائق يومياً">English practice · 5 min/day</p>
 
-      <p class="hero-desc animate-up delay-3"
-        data-en="Unlock fluency through daily bite-sized challenges. Grammar, vocabulary, and listening practice tailored to your class, delivered fresh every morning."
-        data-ar="أطلق عنان فصاحتك من خلال تحديات يومية قصيرة. قواعد، مفردات، وتمارين استماع مخصصة لفصلك، تصلك كل صباح بحلة جديدة.">
-        Unlock fluency through daily bite-sized challenges. Grammar, vocabulary, and listening practice tailored to your
-        class, delivered fresh every morning.
+
+
+      <h1 class="hero-title" data-en="One short quiz. Every school day." data-ar="اختبار قصير. كل يوم دراسي.">One short quiz. Every school day.</h1>
+
+
+
+      <p class="hero-desc"
+
+        data-en="Grammar and vocabulary questions chosen by your teacher. Finish in about five minutes, then check where you stand on the class rankings."
+
+        data-ar="أسئلة قواعد ومفردات يختارها معلمك. أنهِ الاختبار في حوالي خمس دقائق، ثم تابع ترتيبك بين زملائك.">
+
+        Grammar and vocabulary questions chosen by your teacher. Finish in about five minutes, then check where you stand on the class rankings.
+
       </p>
 
-      <div class="flex-center gap-20 flex-wrap animate-up delay-4" style="margin-top: 40px;">
-        <a href="login.html" class="btn btn-primary btn-lg" data-en="🎯 Start Today Free"
-          data-ar="🎯 ابدأ اليوم مجاناً">🎯 Start Today Free</a>
-        <a href="#features" class="btn btn-outline btn-lg" data-en="See How it Works" data-ar="كيف يعمل؟">See How it
-          Works</a>
+
+
+      <div class="d-flex gap-3 flex-wrap">
+
+        <a href="login.html" class="btn btn-primary btn-lg" data-en="Create student account" data-ar="إنشاء حساب طالب">Create student account</a>
+
+        <a href="#how" class="btn btn-outline btn-lg" data-en="How it works" data-ar="كيف يعمل">How it works</a>
+
       </div>
+
+
 
       <div class="hero-stats-row">
+
         <div class="mini-stat">
-          <div class="dot gold"></div>
-          <span data-en="Smart Rankings" data-ar="ترتيب ذكي">Smart Rankings</span>
+
+          <div class="dot"></div>
+
+          <span data-en="Same quiz for the whole class" data-ar="نفس الاختبار للفصل">Same quiz for the whole class</span>
+
         </div>
+
         <div class="mini-stat">
-          <div class="dot green"></div>
-          <span data-en="Teacher Powered" data-ar="بإشراف المعلم">Teacher Powered</span>
+
+          <div class="dot"></div>
+
+          <span data-en="Teacher sets the questions" data-ar="المعلم يحدد الأسئلة">Teacher sets the questions</span>
+
         </div>
+
         <div class="mini-stat">
-          <div class="dot purple"></div>
-          <span data-en="Daily New Challenges" data-ar="تحديات جديدة يومياً">Daily New Challenges</span>
+
+          <div class="dot"></div>
+
+          <span data-en="Scores saved automatically" data-ar="النتائج تُحفظ تلقائياً">Scores saved automatically</span>
+
         </div>
+
       </div>
+
     </div>
+
   </header>
 
-  <!-- Features Section -->
-  <section id="features" class="py-80">
+
+
+  <section id="how" class="py-80">
+
     <div class="container">
+
       <div class="row g-4">
+
         <div class="col-md-4">
-          <div class="feature-card text-center animate-up delay-1">
-            <div class="card-icon mx-auto">🚀</div>
-            <h3 data-en="Consistency is Key" data-ar="الاستمرارية هي السر">Consistency is Key</h3>
+
+          <div class="feature-card">
+
+            <div class="feature-num">01</div>
+
+            <h3 data-en="Five minutes is enough" data-ar="خمس دقائق تكفي">Five minutes is enough</h3>
+
             <p class="text-muted"
-              data-en="Building a habit is easier when it only takes 5 minutes. No more burning out—just steady progress."
-              data-ar="بناء العادة أسهل عندما يستغرق 5 دقائق فقط. وداعاً للإرهاق، وأهلاً بالتقدم المستمر.">Building a
-              habit is easier when it only takes 5 minutes. No more burning out—just steady progress.</p>
+
+              data-en="A small daily habit beats cramming once a week. Most students finish on their phone between classes."
+
+              data-ar="عادة يومية صغيرة أفضل من المذاكرة مرة في الأسبوع. أغلب الطلاب ينهون الاختبار من الموبايل بين الحصص.">A small daily habit beats cramming once a week. Most students finish on their phone between classes.</p>
+
           </div>
+
         </div>
+
         <div class="col-md-4">
-          <div class="feature-card text-center animate-up delay-2">
-            <div class="card-icon mx-auto">👨‍🏫</div>
-            <h3 data-en="Expert Guidance" data-ar="إرشاد الخبراء">Expert Guidance</h3>
+
+          <div class="feature-card">
+
+            <div class="feature-num">02</div>
+
+            <h3 data-en="Your teacher picks the content" data-ar="معلمك يختار المحتوى">Your teacher picks the content</h3>
+
             <p class="text-muted"
-              data-en="Your teacher selects the best questions to ensure you're learning what matters most for your level."
-              data-ar="معلمك يختار أفضل الأسئلة لضمان تعلمك ما يهم حقاً لمستواك الدراسي.">Your teacher selects the best
-              questions to ensure you're learning what matters most for your level.</p>
+
+              data-en="Questions come from a bank your teacher manages. The daily quiz matches what you're working on in class."
+
+              data-ar="الأسئلة من بنك يديره معلمك. اختبار اليوم يتوافق مع ما تدرسونه في الصف.">Questions come from a bank your teacher manages. The daily quiz matches what you're working on in class.</p>
+
           </div>
+
         </div>
+
         <div class="col-md-4">
-          <div class="feature-card text-center animate-up delay-3">
-            <div class="card-icon mx-auto">🏆</div>
-            <h3 data-en="Competitive Learning" data-ar="تعلم تنافسي">Competitive Learning</h3>
+
+          <div class="feature-card">
+
+            <div class="feature-num">03</div>
+
+            <h3 data-en="See how you compare" data-ar="اعرف ترتيبك">See how you compare</h3>
+
             <p class="text-muted"
-              data-en="Climb the live leaderboard and earn your spot at the top. Learning is more fun with a little competition."
-              data-ar="ارتقِ في لوحة الترتيب المباشرة واحجز مكانك في القمة. التعلم أمتع مع القليل من المنافسة.">Climb
-              the live leaderboard and earn your spot at the top. Learning is more fun with a little competition.</p>
+
+              data-en="Points add up over the week. The rankings page shows who's keeping up — no need to ask in the group chat."
+
+              data-ar="النقاط تتراكم خلال الأسبوع. صفحة الترتيب توضح من يواصل التمرين — بدون ما تسأل في الجروب.">Points add up over the week. The rankings page shows who's keeping up — no need to ask in the group chat.</p>
+
           </div>
+
         </div>
+
       </div>
+
     </div>
+
   </section>
 
-  <!-- Footer -->
+
+
   <footer class="py-60" style="border-top:1px solid var(--border); background:var(--bg-deep);">
+
     <div class="container text-center">
+
       <div class="brand justify-content-center mb-4">
-        <div class="brand-dot"></div>
-        <span style="font-size:1.5rem; font-weight:800;">Daily English</span>
+
+        <img src="gemini-svg.svg" alt="Daily English" class="brand-logo-full">
+
       </div>
+
       <div class="d-flex gap-4 justify-content-center mb-4 flex-wrap">
+
         <a href="index.html" class="nav-link" data-en="Home" data-ar="الرئيسية">Home</a>
+
         <a href="leaderboard.html" class="nav-link" data-en="Rankings" data-ar="الترتيب">Rankings</a>
-        <a href="login.html" class="nav-link" data-en="Login" data-ar="دخول">Login</a>
+
+        <a href="login.html" class="nav-link" data-en="Sign in" data-ar="دخول">Sign in</a>
+
       </div>
-      <p class="text-muted" style="font-size:0.9rem;">© 2026 Daily English. All rights reserved.</p>
+
+      <p class="text-muted" style="font-size:0.85rem;">© 2026 Daily English</p>
+
     </div>
+
   </footer>
 
+
+
   <script>
+
     DB.initPromise.then(() => {
+
       const user = auth.currentUser;
+
       const btn = document.getElementById('nav-btn');
+
       if (user && btn) {
+
         const d = DB.get();
+
         btn.href = d.users?.admins?.[user.uid] ? 'teacher.html' : 'student.html';
+
         btn.setAttribute('data-en', 'Dashboard');
+
         btn.setAttribute('data-ar', 'لوحة التحكم');
+
         if (window.ui) ui.translate(document.body);
+
       }
+
     });
+
   </script>
+
+
 
 </body>
 
+
+
 </html>
+
+

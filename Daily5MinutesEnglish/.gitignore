@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Data backups (may contain user credentials)
+backups/
+
+# Cursor agent state
+.cursor/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/

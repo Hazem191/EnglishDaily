@@ -77,17 +77,23 @@ const UI = {
     applyTheme(t) {
         document.documentElement.setAttribute('data-theme', t);
         const btn = document.getElementById('theme-toggle');
-        if (btn) btn.innerHTML = t === 'dark' ? '🌙' : '☀️';
+        if (btn) btn.textContent = t === 'dark' ? 'Aa' : '◐';
     },
 
     applyLang(l) {
         this.lang = l;
         document.documentElement.setAttribute('lang', l);
+        document.documentElement.setAttribute('dir', l === 'ar' ? 'rtl' : 'ltr');
         document.body.setAttribute('dir', l === 'ar' ? 'rtl' : 'ltr');
         document.body.classList.toggle('lang-ar', l === 'ar');
 
         const langBtn = document.getElementById('lang-toggle');
         if (langBtn) langBtn.textContent = l === 'ar' ? 'EN' : 'AR';
+
+        const brandLogo = document.getElementById('brand-logo');
+        if (brandLogo) {
+            brandLogo.alt = l === 'ar' ? 'ديلي إنجلش' : 'Daily English';
+        }
 
         // 1. Translate static content
         this.translate(document.body);

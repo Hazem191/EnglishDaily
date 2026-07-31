@@ -52,9 +52,7 @@ function setupRealtimeLeaderboard(currentUser) {
       const isMe = currentUser && s.id === currentUser.id;
       const rank = idx + 1;
       let badge = rank;
-      if (rank === 1) badge = '🥇';
-      else if (rank === 2) badge = '🥈';
-      else if (rank === 3) badge = '🥉';
+      if (rank <= 3) badge = rank;
 
       html += `
         <tr class="${isMe ? 'highlight' : ''}">
@@ -89,8 +87,8 @@ function renderPodium(top3) {
   let html = '';
 
   // Order: 2, 1, 3 for visual pyramid
+  if (one) html += renderPodiumCard(one, 1, 'first');
   if (two) html += renderPodiumCard(two, 2, 'second');
-  if (one) html += renderPodiumCard(one, '👑', 'first');
   if (three) html += renderPodiumCard(three, 3, 'third');
 
   container.innerHTML = html;

@@ -5,13 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Portal - Daily English</title>
+    <link rel="icon" href="gemini-svg.svg" type="image/svg+xml">
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet">
-
-    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -26,8 +21,7 @@
     <nav class="navbar">
         <div class="container nav-content px-0">
             <a href="index.html" class="brand">
-                <div class="brand-dot"></div>
-                <span data-en="Daily English" data-ar="ديلي إنجلش">Daily English</span>
+                <img src="gemini-svg.svg" alt="Daily English" class="brand-logo-full" id="brand-logo">
             </a>
             <div class="nav-links">
                 <a href="index.html" class="nav-link" data-en="Home" data-ar="الرئيسية">Home</a>
@@ -44,9 +38,9 @@
             <div class="auth-logo"
                 style="background: var(--secondary); border-radius: 50%; width: 50px; height: 50px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff;">
                 A</div>
-            <h2 data-en="Teacher Hub" data-ar="بوابة المعلم">Teacher Hub</h2>
-            <p class="text-muted" data-en="Administrative verification required" data-ar="مطلوب التحقق الإداري">
-                Administrative verification required</p>
+            <h2 data-en="Teacher sign in" data-ar="دخول المعلم">Teacher sign in</h2>
+            <p class="text-muted" data-en="For teachers and administrators only." data-ar="للمعلمين والإداريين فقط.">
+                For teachers and administrators only.</p>
         </div>
 
         <form id="admin-login-form">
@@ -68,9 +62,8 @@
                 </div>
             </div>
             <div id="admin-error" class="form-error"></div>
-            <button type="submit" class="btn btn-primary btn-lg w-100"
-                style="background: linear-gradient(135deg, var(--secondary), var(--primary));" data-en="Enter Dashboard"
-                data-ar="دخول لوحة التحكم">Enter Dashboard</button>
+            <button type="submit" class="btn btn-primary btn-lg w-100" data-en="Sign in"
+                data-ar="دخول">Sign in</button>
         </form>
 
         <div class="text-center mt-4">
@@ -98,7 +91,7 @@
 
                 const snap = await rtdb.ref(`users/admins/${uid}`).once('value');
                 if (snap.exists()) {
-                    showToast('Welcome back, Teacher! 🎓', 'success');
+                    showToast('Signed in.', 'success');
                     setTimeout(() => window.location.href = 'teacher.html', 600);
                 } else {
                     console.warn("⛔ Unauthorized: UID not in admin list", uid);

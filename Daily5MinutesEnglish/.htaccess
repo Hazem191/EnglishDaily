@@ -11,3 +11,9 @@ Options -Indexes
 
 # Set UTF-8 encoding
 AddDefaultCharset UTF-8
+
+# Block direct access to backup JSON files
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^backups(/|$) - [F,L]
+</IfModule>

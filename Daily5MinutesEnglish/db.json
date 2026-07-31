@@ -5,20 +5,11 @@
                 "id": "admin-1",
                 "name": "Ms Shrouk Omran",
                 "email": "Shrouk@admin.com",
-                "password": "Shrouk@2003",
+                "password": "d756309a0dc49d3b35930cb71df2d7b7df7800409b41bca43a15fc72e58ec8dc",
                 "role": "teacher"
             }
         },
-        "students": {
-            "u-demo-1": {
-                "id": "u-demo-1",
-                "name": "English Learner",
-                "email": "student@test.com",
-                "password": "",
-                "role": "student",
-                "totalScore": 0
-            }
-        }
+        "students": {}
     },
     "questions": {
         "q1": {

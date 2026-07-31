@@ -3,11 +3,11 @@
    ======================================== */
 
 const TYPE_LABELS = {
-    'vocabulary': 'Vocabulary 📚',
-    'grammar': 'Grammar ✏️',
-    'sentence-ordering': 'Sentence Ordering 🔤',
-    'multiple-choice': 'Multiple Choice ☑️',
-    'error-correction': 'Error Correction 🔍'
+    'vocabulary': 'Vocabulary',
+    'grammar': 'Grammar',
+    'sentence-ordering': 'Sentence order',
+    'multiple-choice': 'Multiple choice',
+    'error-correction': 'Error correction'
 };
 
 let currentUser = null;
@@ -20,6 +20,52 @@ let quizState = 'loading'; // 'playing', 'results', 'completed'
 let cachedResults = null;
 let isSubmitting = false;  // prevents double-submit
 
+const QUIZ_DURATION_SECONDS = 300;
+let quizTimerSeconds = QUIZ_DURATION_SECONDS;
+let quizTimerId = null;
+
+function formatTimer(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function updateQuizTimerDisplay() {
+    const timerEl = document.getElementById('quiz-timer');
+    if (!timerEl) return;
+
+    const isAr = window.ui?.lang === 'ar';
+    const timeText = formatTimer(quizTimerSeconds);
+    timerEl.textContent = isAr ? `${timeText} متبقية` : `${timeText} left`;
+    timerEl.classList.toggle('timer-warning', quizTimerSeconds <= 120 && quizTimerSeconds > 30);
+    timerEl.classList.toggle('timer-danger', quizTimerSeconds <= 30);
+}
+
+function startQuizTimer() {
+    stopQuizTimer();
+    quizTimerSeconds = QUIZ_DURATION_SECONDS;
+    updateQuizTimerDisplay();
+    quizTimerId = setInterval(() => {
+        if (quizTimerSeconds > 0) quizTimerSeconds--;
+        updateQuizTimerDisplay();
+        if (quizTimerSeconds === 0) {
+            stopQuizTimer();
+            const isAr = window.ui?.lang === 'ar';
+            showToast(
+                isAr ? 'انتهى الوقت. يمكنك إرسال إجاباتك الآن.' : 'Time is up. You can still submit your answers.',
+                'info'
+            );
+        }
+    }, 1000);
+}
+
+function stopQuizTimer() {
+    if (quizTimerId) {
+        clearInterval(quizTimerId);
+        quizTimerId = null;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     requireAuth('student', initStudentPage);
 });
@@ -30,9 +76,9 @@ async function initStudentPage(userData) {
     // UI updates
     const welcomeMsg = document.getElementById('welcome-msg');
     if (welcomeMsg) {
-        welcomeMsg.setAttribute('data-en', `Hello, ${userData.name}! 👋`);
-        welcomeMsg.setAttribute('data-ar', `مرحباً، ${userData.name}! 👋`);
-        welcomeMsg.textContent = `Hello, ${userData.name}! 👋`;
+        welcomeMsg.setAttribute('data-en', `Hello, ${userData.name}`);
+        welcomeMsg.setAttribute('data-ar', `مرحباً، ${userData.name}`);
+        welcomeMsg.textContent = `Hello, ${userData.name}`;
     }
 
     const scoreDisplay = document.getElementById('nav-score-display');
@@ -62,6 +108,7 @@ async function initStudentPage(userData) {
     if (alreadyDone) {
         quizState = 'completed';
         cachedResults = alreadyDone;
+        stopQuizTimer();
         showAlreadyCompleted(alreadyDone);
     } else {
         quizState = 'playing';
@@ -84,16 +131,16 @@ function showAlreadyCompleted(resultData) {
 
     quizArea.innerHTML = `
     <div class="quiz-card text-center" style="padding: 60px 40px;">
-      <div style="font-size: 5rem; margin-bottom: 20px; animation: bounceIn 0.6s ease">🎉</div>
-      <h2 class="mb-2" data-en="Great Work!" data-ar="عمل رائع!">Great Work!</h2>
-      <p class="text-muted mb-4" data-en="You've already completed today's challenge. Come back tomorrow!" data-ar="لقد أنهيت تحدي اليوم. عد غداً!">You've already completed today's challenge. Come back tomorrow!</p>
+      <div style="font-size: 2rem; margin-bottom: 16px; font-weight: 700; color: var(--primary);">✓</div>
+      <h2 class="mb-2" data-en="Done for today" data-ar="انتهيت لليوم">Done for today</h2>
+      <p class="text-muted mb-4" data-en="You already finished today's quiz. Come back tomorrow." data-ar="أنهيت اختبار اليوم. عد غداً.">You already finished today's quiz. Come back tomorrow.</p>
       <div class="stats-grid" style="max-width: 320px; margin: 0 auto 32px;">
         <div class="stats-card">
           <span class="label" data-en="Today's Score" data-ar="نتيجة اليوم">Today's Score</span>
           <span class="value text-gradient">${resultData.score} / ${total}</span>
         </div>
       </div>
-      <a href="leaderboard.html" class="btn btn-primary" data-en="🏆 View Rankings" data-ar="🏆 مشاهدة الترتيب">🏆 View Rankings</a>
+      <a href="leaderboard.html" class="btn btn-primary" data-en="View rankings" data-ar="عرض الترتيب">View rankings</a>
     </div>`;
 
     if (window.ui) ui.translate(quizArea);
@@ -105,6 +152,7 @@ async function loadDailyQuestions() {
         // Use the shared daily exam (same for all students, reset every 24h)
         dailyQuestions = await getOrGenerateDailyExam();
         hideLoading();
+        if (dailyQuestions.length > 0) startQuizTimer();
         renderQuestion();
     } catch (e) {
         hideLoading();
@@ -128,11 +176,12 @@ function renderQuestion() {
     const bar = document.getElementById('progress-fill');
 
     if (dailyQuestions.length === 0) {
+        stopQuizTimer();
         quizArea.innerHTML = `
             <div class="quiz-card text-center" style="padding:60px 40px;">
                 <div style="font-size: 3rem; margin-bottom: 16px;">📭</div>
-                <h3 data-en="No questions yet" data-ar="لا توجد أسئلة بعد">No questions yet</h3>
-                <p class="text-muted" data-en="Your teacher hasn't added any questions yet. Check back soon!" data-ar="لم يضف معلمك أسئلة حتى الآن. تحقق لاحقاً!">Your teacher hasn't added any questions yet. Check back soon!</p>
+                <h3 data-en="No quiz available yet" data-ar="لا يوجد اختبار متاح بعد">No quiz available yet</h3>
+                <p class="text-muted" data-en="Your teacher hasn't published today's exam yet, or the question bank is empty. Please check back later!" data-ar="لم ينشر معلمك امتحان اليوم بعد، أو أن بنك الأسئلة فارغ. تحقق لاحقاً!">Your teacher hasn't published today's exam yet, or the question bank is empty. Please check back later!</p>
             </div>`;
         if (progressArea) progressArea.classList.add('hidden');
         return;
@@ -234,9 +283,9 @@ window.prevQuestion = function () {
 };
 
 window.submitQuiz = async function () {
-    // Prevent double-submit if user taps Finish more than once
     if (isSubmitting) return;
     isSubmitting = true;
+    stopQuizTimer();
 
     // Visually disable the Finish button immediately
     const finishBtn = document.querySelector('#quiz-area .btn-primary');
@@ -286,12 +335,11 @@ window.submitQuiz = async function () {
 
 function showResult(score, total) {
     const pct = Math.round((score / total) * 100);
-    const emoji = pct >= 80 ? '🏆' : pct >= 60 ? '😊' : '💪';
     const msg = pct >= 80
-        ? { en: 'Excellent! You nailed it!', ar: 'ممتاز! أحسنت!' }
+        ? { en: 'Strong result.', ar: 'نتيجة ممتازة.' }
         : pct >= 60
-            ? { en: 'Good job! Keep it up!', ar: 'عمل جيد! استمر!' }
-            : { en: 'Keep practicing, you\'ll do better!', ar: 'استمر في التدريب، ستتحسن!' };
+            ? { en: 'Good work — keep going.', ar: 'عمل جيد — واصل.' }
+            : { en: 'Review the answers below.', ar: 'راجع الإجابات أدناه.' };
 
     const bar = document.getElementById('progress-fill');
     if (bar) bar.style.width = '100%';
@@ -299,9 +347,9 @@ function showResult(score, total) {
     const container = document.getElementById('quiz-area');
     container.innerHTML = `
         <div class="quiz-card text-center fade-in" style="padding:60px 40px;">
-            <div style="font-size:5rem; margin-bottom:20px;">${emoji}</div>
-            <h2 class="hero-title mb-2" style="font-size:2rem;" data-en="${msg.en}" data-ar="${msg.ar}">${msg.en}</h2>
-            <p class="text-muted mb-4" data-en="Daily challenge complete!" data-ar="اكتمل تحدي اليوم!">Daily challenge complete!</p>
+            <div style="font-size:2.5rem; font-weight:700; margin-bottom:20px; color:var(--primary);">${score}/${total}</div>
+            <h2 class="hero-title mb-2" style="font-size:1.75rem;" data-en="${msg.en}" data-ar="${msg.ar}">${msg.en}</h2>
+            <p class="text-muted mb-4" data-en="Today's quiz is complete." data-ar="اكتمل اختبار اليوم.">Today's quiz is complete.</p>
 
             <div class="score-ring" style="
                 width:140px; height:140px; border-radius:50%;
@@ -332,7 +380,7 @@ function showResult(score, total) {
             </div>
 
             <div class="d-flex gap-3 justify-content-center flex-wrap">
-                <a href="leaderboard.html" class="btn btn-primary" data-en="🏆 Hall of Fame" data-ar="🏆 لوحة الشرف">🏆 Hall of Fame</a>
+                <a href="leaderboard.html" class="btn btn-primary" data-en="View rankings" data-ar="عرض الترتيب">View rankings</a>
                 <button class="btn btn-outline" onclick="location.reload()" data-en="↩ Done" data-ar="↩ تم">↩ Done</button>
             </div>
         </div>`;
@@ -357,8 +405,8 @@ window.updateProfile = async function () {
 
         const welcomeMsg = document.getElementById('welcome-msg');
         if (welcomeMsg) {
-            welcomeMsg.setAttribute('data-en', `Hello, ${newName}! 👋`);
-            welcomeMsg.setAttribute('data-ar', `مرحباً، ${newName}! 👋`);
+            welcomeMsg.setAttribute('data-en', `Hello, ${newName}`);
+            welcomeMsg.setAttribute('data-ar', `مرحباً، ${newName}`);
             if (window.ui) ui.translate(welcomeMsg);
         }
 

@@ -90,6 +90,7 @@ async function initTeacherPage(userData) {
     setupRealtimeStats();
     setupQuestionForm();
     loadExamSettings();
+    updateAttendanceReport();
     showTab('overview');
 }
 
@@ -112,6 +113,7 @@ function showTab(tabName) {
     if (tabName === 'students') loadStudentsList();
     if (tabName === 'view-questions') loadQuestionsList();
     if (tabName === 'exam-builder') loadExamBuilder();
+    if (tabName === 'overview') updateAttendanceReport();
 }
 
 /* ========================================
@@ -131,6 +133,7 @@ function setupRealtimeStats() {
         const count = snap.numChildren();
         const el = document.getElementById('stat-students');
         if (el) el.textContent = count;
+        updateAttendanceReport();
     });
 
     managedOn('dailyResults', (snap) => {
@@ -147,7 +150,72 @@ function setupRealtimeStats() {
         const statA = document.getElementById('stat-avg');
         if (statT) statT.textContent = todayCount;
         if (statA) statA.textContent = avgScore;
+        updateAttendanceReport();
     });
+}
+
+function updateAttendanceReport() {
+    const container = document.getElementById('attendance-report');
+    if (!container) return;
+
+    const today = getTodayString();
+    const data = DB.get();
+    const students = Object.values(data.users?.students || {});
+    const results = data.dailyResults || {};
+    const isAr = window.ui?.lang === 'ar';
+
+    if (students.length === 0) {
+        container.innerHTML = `<p class="text-muted mb-0" data-en="No students registered yet." data-ar="لا يوجد طلاب مسجلون بعد.">No students registered yet.</p>`;
+        if (window.ui) ui.translate(container);
+        return;
+    }
+
+    const completed = [];
+    const pending = [];
+    students.forEach((student) => {
+        const result = results[student.id]?.[today];
+        if (result) completed.push({ student, result });
+        else pending.push(student);
+    });
+
+    completed.sort((a, b) => (b.result.score || 0) - (a.result.score || 0));
+    pending.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    const summary = isAr
+        ? `${completed.length} من ${students.length} أكملوا اختبار اليوم`
+        : `${completed.length} of ${students.length} completed today's quiz`;
+
+    let html = `
+        <div class="attendance-summary">
+            <span class="attendance-pill">${summary}</span>
+            <span class="attendance-pill">${isAr ? `${pending.length} لم يكملوا` : `${pending.length} pending`}</span>
+        </div>
+        <div class="attendance-list">`;
+
+    completed.forEach(({ student, result }) => {
+        html += `
+            <div class="attendance-row done">
+                <div>
+                    <strong>${escapeHTML(student.name)}</strong>
+                    <div class="text-muted" style="font-size:0.85rem;">${escapeHTML(student.email || '')}</div>
+                </div>
+                <span class="tag" style="background:rgba(21,128,61,0.12); color:#15803d;">${result.score || 0}/${result.total || '—'}</span>
+            </div>`;
+    });
+
+    pending.forEach((student) => {
+        html += `
+            <div class="attendance-row pending">
+                <div>
+                    <strong>${escapeHTML(student.name)}</strong>
+                    <div class="text-muted" style="font-size:0.85rem;">${escapeHTML(student.email || '')}</div>
+                </div>
+                <span class="tag">${isAr ? 'لم يكمل' : 'Not submitted'}</span>
+            </div>`;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
 }
 
 function generateDistributionChart(questions) {
@@ -190,7 +258,7 @@ function generateDistributionChart(questions) {
             plugins: {
                 legend: {
                     position: 'bottom',
-                    labels: { color: textColor.trim(), font: { family: 'Outfit', size: 13 }, padding: 16 }
+                    labels: { color: textColor.trim(), font: { family: 'Segoe UI, system-ui, sans-serif', size: 13 }, padding: 16 }
                 }
             }
         }
@@ -299,7 +367,7 @@ async function saveQuestion() {
         const data = DB.get();
         if (data.config) { data.config.currentExamDate = null; data.config.currentExamQuestions = []; DB.save(data); }
 
-        showToast('Question published! ✓', 'success');
+        showToast('Question saved.', 'success');
         document.getElementById('add-question-form').reset();
         if (errorEl) errorEl.textContent = '';
     } catch (e) {
@@ -307,7 +375,7 @@ async function saveQuestion() {
         showToast('Error saving question.', 'error');
     }
 
-    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Publish Challenge'; }
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Save question'; }
 }
 
 /* ========================================
@@ -346,18 +414,26 @@ window.loadQuestionsList = function () {
     });
 };
 
-window.deleteQuestion = function (qid) {
-    const msg = ui.lang === 'ar' ? 'هل أنت متأكد من حذف هذا السؤال؟ سيتم إزالته أيضاً من امتحان اليوم.' : 'Delete this question? It will also be removed from today\'s exam if selected.';
-    if (confirm(msg)) {
-        rtdb.ref(`questions/${qid}`).remove();
-        showToast(ui.lang === 'ar' ? 'تم حذف السؤال' : 'Question deleted.', 'success');
+window.deleteQuestion = async function (qid) {
+    const isAr = ui.lang === 'ar';
+    const confirmed = await showConfirmDialog({
+        title: isAr ? 'حذف السؤال' : 'Delete question',
+        message: isAr
+            ? 'هل أنت متأكد من حذف هذا السؤال؟ سيتم إزالته أيضاً من امتحان اليوم.'
+            : 'Delete this question? It will also be removed from today\'s exam if selected.',
+        confirmText: isAr ? 'حذف' : 'Delete',
+        cancelText: isAr ? 'إلغاء' : 'Cancel',
+        danger: true
+    });
+    if (!confirmed) return;
 
-        // Clear today's exam to auto-regenerate without deleted question
-        const data = DB.get();
-        if (data.config && data.config.currentExamQuestions?.includes(qid)) {
-            data.config.currentExamQuestions = data.config.currentExamQuestions.filter(id => id !== qid);
-            DB.save(data);
-        }
+    rtdb.ref(`questions/${qid}`).remove();
+    showToast(isAr ? 'تم حذف السؤال' : 'Question deleted.', 'success');
+
+    const data = DB.get();
+    if (data.config && data.config.currentExamQuestions?.includes(qid)) {
+        data.config.currentExamQuestions = data.config.currentExamQuestions.filter(id => id !== qid);
+        DB.save(data);
     }
 };
 
@@ -435,17 +511,17 @@ function loadExamBuilder() {
 
     let html = `
         <div class="feature-card mb-4">
-            <h3 class="mb-3" data-en="📋 Today's Exam Settings" data-ar="إعدادات امتحان اليوم">📋 Today's Exam Settings</h3>
+            <h3 class="mb-3" data-en="Today's exam settings" data-ar="إعدادات امتحان اليوم">Today's exam settings</h3>
             <div class="row g-3 align-items-end mb-4">
                 <div class="col-md-4">
-                    <label class="form-label" data-en="Questions per Quiz" data-ar="عدد الأسئلة في الامتحان">Questions per Quiz</label>
+                    <label class="form-label" data-en="Questions per quiz" data-ar="عدد الأسئلة في الامتحان">Questions per quiz</label>
                     <input type="number" id="quiz-size-input" class="form-input" min="3" max="20" value="${cfg.quizSize || 5}">
                 </div>
                 <div class="col-md-4">
-                    <button class="btn btn-outline" onclick="saveQuizSize()" style="width:100%;" data-en="💾 Save Size" data-ar="💾 حفظ العدد">💾 Save Size</button>
+                    <button class="btn btn-outline" onclick="saveQuizSize()" style="width:100%;" data-en="Save size" data-ar="حفظ العدد">Save size</button>
                 </div>
                 <div class="col-md-4">
-                    <button class="btn btn-primary" onclick="autoGenerateExam()" style="width:100%;" data-en="🔄 Auto-Generate" data-ar="🔄 توليد تلقائي">🔄 Auto-Generate Today's Exam</button>
+                    <button class="btn btn-primary" onclick="autoGenerateExam()" style="width:100%;" data-en="Auto-generate" data-ar="توليد تلقائي">Auto-generate</button>
                 </div>
             </div>
             <p style="font-size:0.85rem; color:var(--text-dim);" data-en="Or manually pick questions for today's exam below:" data-ar="أو اختر الأسئلة يدوياً لامتحان اليوم:">Or manually pick questions for today's exam below:</p>
@@ -479,7 +555,7 @@ function loadExamBuilder() {
     html += `
             </div>
             <div style="margin-top:24px; display:flex; gap:12px; flex-wrap:wrap;">
-                <button class="btn btn-primary" onclick="publishManualExam()" data-en="🚀 Publish This Exam" data-ar="🚀 نشر هذا الامتحان">🚀 Publish This Exam</button>
+                <button class="btn btn-primary" onclick="publishManualExam()" data-en="Publish exam" data-ar="نشر الامتحان">Publish exam</button>
                 <button class="btn btn-outline" onclick="clearExamSelection()" data-en="✕ Clear Selection" data-ar="✕ مسح الاختيار">✕ Clear Selection</button>
             </div>
         </div>`;
@@ -555,6 +631,10 @@ window.autoGenerateExam = async function () {
     }
     const selected = shuffled.slice(0, Math.min(size, allIds.length));
 
+    if (allIds.length < size) {
+        showToast(`Only ${allIds.length} questions available (requested ${size}). Using all available.`, 'info');
+    }
+
     await setDailyExam(selected);
     hideLoading();
     loadExamSettings(); // Refresh the pill in header
@@ -563,7 +643,7 @@ window.autoGenerateExam = async function () {
 
 window.saveQuizSize = async function () {
     const val = parseInt(document.getElementById('quiz-size-input')?.value);
-    if (!val || val < 1 || val > 50) return showToast('Enter a number between 1 and 50.', 'error');
+    if (!val || val < 3 || val > 20) return showToast('Enter a number between 3 and 20.', 'error');
 
     showLoading();
     await setQuizSize(val);
@@ -592,31 +672,51 @@ function loadExamSettings() {
     const isToday = cfg.currentExamDate === today;
     el.innerHTML = `
         <span class="tag" style="${isToday ? 'background:rgba(16,185,129,0.15); color:#10b981;' : ''}">
-            ${isToday ? '✅ Exam Set' : '🔄 Auto-Daily'} | ${cfg.quizSize || 5} questions
+            ${isToday ? 'Exam set' : 'Auto daily'} | ${cfg.quizSize || 5} questions
         </span>`;
 }
 
 /* ========================================
    Database Management
    ======================================== */
-window.clearAllResults = function () {
-    const msg = ui.lang === 'ar' ? 'هل أنت متأكد من مسح جميع نتائج الطلاب؟ لا يمكن التراجع عن هذه الخطوة.' : 'Delete ALL student results? This cannot be undone.';
-    if (!confirm(msg)) return;
+window.clearAllResults = async function () {
+    const isAr = ui.lang === 'ar';
+    const confirmed = await showConfirmDialog({
+        title: isAr ? 'مسح النتائج' : 'Clear all results',
+        message: isAr
+            ? 'هل أنت متأكد من مسح جميع نتائج الطلاب؟ لا يمكن التراجع عن هذه الخطوة.'
+            : 'Delete ALL student results? This cannot be undone.',
+        confirmText: isAr ? 'مسح الكل' : 'Clear all',
+        cancelText: isAr ? 'إلغاء' : 'Cancel',
+        danger: true
+    });
+    if (!confirmed) return;
+
     const data = DB.get();
     data.dailyResults = {};
     DB.save(data);
-    showToast(ui.lang === 'ar' ? 'تم مسح جميع النتائج' : 'All results cleared.', 'success');
+    showToast(isAr ? 'تم مسح جميع النتائج' : 'All results cleared.', 'success');
 };
 
-window.resetTodayExam = function () {
-    const msg = ui.lang === 'ar' ? 'إعادة تعيين امتحان اليوم؟ سيتم توليد امتحان جديد تلقائياً.' : 'Reset today\'s exam? Students will see a new auto-generated exam.';
-    if (!confirm(msg)) return;
+window.resetTodayExam = async function () {
+    const isAr = ui.lang === 'ar';
+    const confirmed = await showConfirmDialog({
+        title: isAr ? 'إعادة تعيين الامتحان' : 'Reset today\'s exam',
+        message: isAr
+            ? 'إعادة تعيين امتحان اليوم؟ سيتم توليد امتحان جديد تلقائياً.'
+            : 'Reset today\'s exam? Students will see a new auto-generated exam.',
+        confirmText: isAr ? 'إعادة التعيين' : 'Reset',
+        cancelText: isAr ? 'إلغاء' : 'Cancel',
+        danger: true
+    });
+    if (!confirmed) return;
+
     const data = DB.get();
     data.config = data.config || {};
     data.config.currentExamDate = null;
     data.config.currentExamQuestions = [];
     DB.save(data);
-    showToast(ui.lang === 'ar' ? 'تمت إعادة تعيين الامتحان.' : 'Today\'s exam reset.', 'success');
+    showToast(isAr ? 'تمت إعادة تعيين الامتحان.' : 'Today\'s exam reset.', 'success');
 };
 
 function escapeHTML(str) {
