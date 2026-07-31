@@ -103,6 +103,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             foreach ($inputData['users']['students'] as $id => $user) {
                 // Ensure role cannot be escalated via API
                 $user['role'] = 'student';
+                $existing = $currentState['users']['students'][$id] ?? null;
+                if (empty($user['password']) && !empty($existing['password'])) {
+                    $user['password'] = $existing['password'];
+                }
                 $currentState['users']['students'][$id] = $user;
             }
         }
@@ -145,6 +149,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 $admin['role'] = 'teacher';
+                $existing = $currentState['users']['admins'][$id] ?? null;
+                if (empty($admin['password']) && !empty($existing['password'])) {
+                    $admin['password'] = $existing['password'];
+                }
                 $currentState['users']['admins'][$id] = $admin;
             }
         }

@@ -62,6 +62,45 @@ function readSeed() {
   return readSeedFromDisk() || readBundledSeed();
 }
 
+function hasPassword(value) {
+  return typeof value === 'string' && value.length > 0;
+}
+
+/** Restore passwords wiped by client sync (GET strips passwords before POST merge). */
+function repairPasswordsFromSeed(data) {
+  const seed = readSeed();
+  if (!seed?.users || !data?.users) return false;
+
+  let changed = false;
+
+  const repairBucket = (dataBucket, seedBucket) => {
+    if (!dataBucket || !seedBucket) return;
+
+    for (const [id, user] of Object.entries(dataBucket)) {
+      if (hasPassword(user?.password)) continue;
+
+      if (hasPassword(seedBucket[id]?.password)) {
+        user.password = seedBucket[id].password;
+        changed = true;
+        continue;
+      }
+
+      const email = (user.email || '').trim().toLowerCase();
+      const seedMatch = Object.values(seedBucket).find(
+        (s) => (s.email || '').trim().toLowerCase() === email && hasPassword(s.password)
+      );
+      if (seedMatch) {
+        user.password = seedMatch.password;
+        changed = true;
+      }
+    }
+  };
+
+  repairBucket(data.users.admins, seed.users.admins);
+  repairBucket(data.users.students, seed.users.students);
+  return changed;
+}
+
 function getUpstashAdapter() {
   const { Redis } = require('@upstash/redis');
   const cfg = getUpstashConfig();
@@ -146,6 +185,9 @@ async function loadDatabase() {
         data = seed;
         console.log('Seeded Redis from bundled seed-data.json');
       }
+    } else if (repairPasswordsFromSeed(data)) {
+      await store.set(KV_KEY, data);
+      console.log('Repaired missing account passwords from seed');
     }
     return data || null;
   }

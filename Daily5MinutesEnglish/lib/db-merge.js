@@ -2,6 +2,17 @@
  * Server-side merge logic — mirrors api.php behaviour for Vercel serverless.
  */
 
+function mergeUserRecord(existing, incoming, role) {
+  const merged = { ...(existing || {}), ...incoming, role };
+  const incomingPassword = incoming?.password;
+  const hasIncomingPassword =
+    typeof incomingPassword === 'string' && incomingPassword.length > 0;
+  if (!hasIncomingPassword && existing?.password) {
+    merged.password = existing.password;
+  }
+  return merged;
+}
+
 function mergeDatabase(currentState, inputData, requestingAdmin) {
   const state = currentState && typeof currentState === 'object' ? { ...currentState } : {};
 
@@ -14,7 +25,7 @@ function mergeDatabase(currentState, inputData, requestingAdmin) {
 
   if (inputData.users?.students) {
     for (const [id, user] of Object.entries(inputData.users.students)) {
-      state.users.students[id] = { ...user, role: 'student' };
+      state.users.students[id] = mergeUserRecord(state.users.students[id], user, 'student');
     }
   }
 
@@ -43,11 +54,11 @@ function mergeDatabase(currentState, inputData, requestingAdmin) {
           continue;
         }
       }
-      state.users.admins[id] = { ...admin, role: 'teacher' };
+      state.users.admins[id] = mergeUserRecord(state.users.admins[id], admin, 'teacher');
     }
   }
 
   return state;
 }
 
-module.exports = { mergeDatabase };
+module.exports = { mergeDatabase, mergeUserRecord };

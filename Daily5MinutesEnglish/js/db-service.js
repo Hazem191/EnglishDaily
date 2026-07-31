@@ -297,7 +297,7 @@ const DB = {
             const response = await fetchWithRetry(apiUrl, {
                 method: 'POST',
                 headers,
-                body: JSON.stringify(data)
+                body: JSON.stringify(_prepareSyncPayload(data))
             });
 
             if (!response.ok) {
@@ -408,6 +408,30 @@ const DB = {
         };
     }
 };
+
+function _prepareSyncPayload(data) {
+    const payload = JSON.parse(JSON.stringify(data));
+    if (!payload.users) return payload;
+
+    for (const role of ['admins', 'students']) {
+        const bucket = payload.users[role];
+        if (!bucket) continue;
+        for (const [id, user] of Object.entries({ ...bucket })) {
+            if (!user?.password) {
+                delete bucket[id];
+            }
+        }
+        if (Object.keys(bucket).length === 0) {
+            delete payload.users[role];
+        }
+    }
+
+    if (payload.users && !payload.users.admins && !payload.users.students) {
+        delete payload.users;
+    }
+
+    return payload;
+}
 
 function _deepMergeDefaults(target, defaults) {
     const result = { ...target };
@@ -587,6 +611,12 @@ const MockAuth = {
             const errBody = await response.json().catch(() => ({}));
 
             if (response.status === 401) {
+                if (errBody.error === 'Unauthorized') {
+                    throw {
+                        code: 'auth/server-error',
+                        message: 'Server configuration error. Contact the site administrator.'
+                    };
+                }
                 throw { code: 'auth/wrong-password', message: 'Incorrect email or password.' };
             }
 
