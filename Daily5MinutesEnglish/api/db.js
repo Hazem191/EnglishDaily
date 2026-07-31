@@ -72,6 +72,7 @@ async function handler(req, res) {
 }
 
 handler.config = {
+  maxDuration: 30,
   api: {
     bodyParser: {
       sizeLimit: '4mb'
