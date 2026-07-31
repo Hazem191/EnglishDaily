@@ -1,0 +1,1222 @@
+{
+    "users": {
+        "admins": {
+            "admin-1": {
+                "id": "admin-1",
+                "name": "Ms Shrouk Omran",
+                "email": "Shrouk@admin.com",
+                "password": "d756309a0dc49d3b35930cb71df2d7b7df7800409b41bca43a15fc72e58ec8dc",
+                "role": "teacher"
+            }
+        },
+        "students": {}
+    },
+    "questions": {
+        "q1": {
+            "questionText": "She ___ to the market every Saturday.",
+            "type": "grammar",
+            "options": [
+                "go",
+                "goes",
+                "going",
+                "gone"
+            ],
+            "correctAnswer": "goes",
+            "createdAt": 1709653892001
+        },
+        "q2": {
+            "questionText": "I have been studying English ___ 2010.",
+            "type": "grammar",
+            "options": [
+                "since",
+                "for",
+                "during",
+                "at"
+            ],
+            "correctAnswer": "since",
+            "createdAt": 1709653892002
+        },
+        "q3": {
+            "questionText": "If it rains, we ___ stay at home.",
+            "type": "grammar",
+            "options": [
+                "will",
+                "would",
+                "are",
+                "shall"
+            ],
+            "correctAnswer": "will",
+            "createdAt": 1709653892003
+        },
+        "q4": {
+            "questionText": "___ you like a cup of tea?",
+            "type": "grammar",
+            "options": [
+                "Do",
+                "Would",
+                "Will",
+                "Can"
+            ],
+            "correctAnswer": "Would",
+            "createdAt": 1709653892004
+        },
+        "q5": {
+            "questionText": "The book is ___ the table.",
+            "type": "grammar",
+            "options": [
+                "on",
+                "in",
+                "at",
+                "under"
+            ],
+            "correctAnswer": "on",
+            "createdAt": 1709653892005
+        },
+        "q6": {
+            "questionText": "He is ___ than his brother.",
+            "type": "grammar",
+            "options": [
+                "tall",
+                "taller",
+                "tallest",
+                "more tall"
+            ],
+            "correctAnswer": "taller",
+            "createdAt": 1709653892006
+        },
+        "q7": {
+            "questionText": "They ___ playing football now.",
+            "type": "grammar",
+            "options": [
+                "is",
+                "are",
+                "am",
+                "be"
+            ],
+            "correctAnswer": "are",
+            "createdAt": 1709653892007
+        },
+        "q8": {
+            "questionText": "___ is your favorite color?",
+            "type": "grammar",
+            "options": [
+                "Who",
+                "What",
+                "Where",
+                "When"
+            ],
+            "correctAnswer": "What",
+            "createdAt": 1709653892008
+        },
+        "q9": {
+            "questionText": "I ___ my homework yesterday.",
+            "type": "grammar",
+            "options": [
+                "do",
+                "did",
+                "done",
+                "doing"
+            ],
+            "correctAnswer": "did",
+            "createdAt": 1709653892009
+        },
+        "q10": {
+            "questionText": "She doesn't ___ any sisters.",
+            "type": "grammar",
+            "options": [
+                "has",
+                "have",
+                "had",
+                "having"
+            ],
+            "correctAnswer": "have",
+            "createdAt": 1709653892010
+        },
+        "q11": {
+            "questionText": "We ___ to London last year.",
+            "type": "grammar",
+            "options": [
+                "go",
+                "went",
+                "gone",
+                "going"
+            ],
+            "correctAnswer": "went",
+            "createdAt": 1709653892011
+        },
+        "q12": {
+            "questionText": "This is ___ interesting movie.",
+            "type": "grammar",
+            "options": [
+                "a",
+                "an",
+                "the",
+                "any"
+            ],
+            "correctAnswer": "an",
+            "createdAt": 1709653892012
+        },
+        "q13": {
+            "questionText": "You ___ smoke in the hospital.",
+            "type": "grammar",
+            "options": [
+                "mustn't",
+                "don't",
+                "can't",
+                "won't"
+            ],
+            "correctAnswer": "mustn't",
+            "createdAt": 1709653892013
+        },
+        "q14": {
+            "questionText": "___ she speak Spanish?",
+            "type": "grammar",
+            "options": [
+                "Do",
+                "Does",
+                "Is",
+                "Has"
+            ],
+            "correctAnswer": "Does",
+            "createdAt": 1709653892014
+        },
+        "q15": {
+            "questionText": "I'm looking forward to ___ you.",
+            "type": "grammar",
+            "options": [
+                "meet",
+                "meeting",
+                "met",
+                "meets"
+            ],
+            "correctAnswer": "meeting",
+            "createdAt": 1709653892015
+        },
+        "q16": {
+            "questionText": "The cake was ___ by my mother.",
+            "type": "grammar",
+            "options": [
+                "make",
+                "made",
+                "making",
+                "makes"
+            ],
+            "correctAnswer": "made",
+            "createdAt": 1709653892016
+        },
+        "q17": {
+            "questionText": "He succeeded ___ passing the exam.",
+            "type": "grammar",
+            "options": [
+                "in",
+                "on",
+                "at",
+                "with"
+            ],
+            "correctAnswer": "in",
+            "createdAt": 1709653892017
+        },
+        "q18": {
+            "questionText": "That is the man ___ car was stolen.",
+            "type": "grammar",
+            "options": [
+                "who",
+                "whom",
+                "whose",
+                "which"
+            ],
+            "correctAnswer": "whose",
+            "createdAt": 1709653892018
+        },
+        "q19": {
+            "questionText": "I don't think I ___ be able to come.",
+            "type": "grammar",
+            "options": [
+                "will",
+                "shall",
+                "can",
+                "may"
+            ],
+            "correctAnswer": "will",
+            "createdAt": 1709653892019
+        },
+        "q20": {
+            "questionText": "Neither of the books ___ interesting.",
+            "type": "grammar",
+            "options": [
+                "is",
+                "are",
+                "be",
+                "being"
+            ],
+            "correctAnswer": "is",
+            "createdAt": 1709653892020
+        },
+        "q21": {
+            "questionText": "What is the synonym of 'Enormous'?",
+            "type": "vocabulary",
+            "options": [
+                "Small",
+                "Huge",
+                "Tiny",
+                "Weak"
+            ],
+            "correctAnswer": "Huge",
+            "createdAt": 1709653892021
+        },
+        "q22": {
+            "questionText": "The opposite of 'Ancient' is ___.",
+            "type": "vocabulary",
+            "options": [
+                "Old",
+                "Modern",
+                "Classic",
+                "History"
+            ],
+            "correctAnswer": "Modern",
+            "createdAt": 1709653892022
+        },
+        "q23": {
+            "questionText": "A person who designs buildings is an ___.",
+            "type": "vocabulary",
+            "options": [
+                "Artist",
+                "Architect",
+                "Engineer",
+                "Doctor"
+            ],
+            "correctAnswer": "Architect",
+            "createdAt": 1709653892023
+        },
+        "q24": {
+            "questionText": "The word 'Fragile' means something that is ___.",
+            "type": "vocabulary",
+            "options": [
+                "Strong",
+                "Easy to break",
+                "Expensive",
+                "Heavy"
+            ],
+            "correctAnswer": "Easy to break",
+            "createdAt": 1709653892024
+        },
+        "q25": {
+            "questionText": "What is the past tense of 'Catch'?",
+            "type": "vocabulary",
+            "options": [
+                "Cated",
+                "Caught",
+                "Catching",
+                "Catched"
+            ],
+            "correctAnswer": "Caught",
+            "createdAt": 1709653892025
+        },
+        "q26": {
+            "questionText": "Which word means 'very tired'?",
+            "type": "vocabulary",
+            "options": [
+                "Exhausted",
+                "Excited",
+                "Happy",
+                "Bored"
+            ],
+            "correctAnswer": "Exhausted",
+            "createdAt": 1709653892026
+        },
+        "q27": {
+            "questionText": "The capital city ___ France is Paris.",
+            "type": "vocabulary",
+            "options": [
+                "of",
+                "in",
+                "at",
+                "to"
+            ],
+            "correctAnswer": "of",
+            "createdAt": 1709653892027
+        },
+        "q28": {
+            "questionText": "A large area of water surrounded by land is a ___.",
+            "type": "vocabulary",
+            "options": [
+                "Lake",
+                "River",
+                "Ocean",
+                "Sea"
+            ],
+            "correctAnswer": "Lake",
+            "createdAt": 1709653892028
+        },
+        "q29": {
+            "questionText": "Which fruit is traditionally given to teachers?",
+            "type": "vocabulary",
+            "options": [
+                "Orange",
+                "Banana",
+                "Apple",
+                "Grape"
+            ],
+            "correctAnswer": "Apple",
+            "createdAt": 1709653892029
+        },
+        "q30": {
+            "questionText": "What do you call a person from Germany?",
+            "type": "vocabulary",
+            "options": [
+                "Germanish",
+                "German",
+                "Germany",
+                "Germane"
+            ],
+            "correctAnswer": "German",
+            "createdAt": 1709653892030
+        },
+        "q31": {
+            "questionText": "Which is a primary color?",
+            "type": "vocabulary",
+            "options": [
+                "Green",
+                "Purple",
+                "Red",
+                "Orange"
+            ],
+            "correctAnswer": "Red",
+            "createdAt": 1709653892031
+        },
+        "q32": {
+            "questionText": "What is the opposite of 'Victory'?",
+            "type": "vocabulary",
+            "options": [
+                "Success",
+                "Win",
+                "Defeat",
+                "Goal"
+            ],
+            "correctAnswer": "Defeat",
+            "createdAt": 1709653892032
+        },
+        "q33": {
+            "questionText": "A doctor who performs operations is a ___.",
+            "type": "vocabulary",
+            "options": [
+                "Surgeon",
+                "Nurse",
+                "Pharmacist",
+                "Patient"
+            ],
+            "correctAnswer": "Surgeon",
+            "createdAt": 1709653892033
+        },
+        "q34": {
+            "questionText": "What is the collective noun for lions?",
+            "type": "vocabulary",
+            "options": [
+                "Pack",
+                "Herd",
+                "Pride",
+                "Flock"
+            ],
+            "correctAnswer": "Pride",
+            "createdAt": 1709653892034
+        },
+        "q35": {
+            "questionText": "Which season comes after winter?",
+            "type": "vocabulary",
+            "options": [
+                "Autumn",
+                "Summer",
+                "Spring",
+                "Fall"
+            ],
+            "correctAnswer": "Spring",
+            "createdAt": 1709653892035
+        },
+        "q36": {
+            "questionText": "The synonym of 'Quick' is ___.",
+            "type": "vocabulary",
+            "options": [
+                "Slow",
+                "Fast",
+                "Careful",
+                "Quiet"
+            ],
+            "correctAnswer": "Fast",
+            "createdAt": 1709653892036
+        },
+        "q37": {
+            "questionText": "A place where you can borrow books is a ___.",
+            "type": "vocabulary",
+            "options": [
+                "Bookshop",
+                "Library",
+                "School",
+                "Museum"
+            ],
+            "correctAnswer": "Library",
+            "createdAt": 1709653892037
+        },
+        "q38": {
+            "questionText": "What is a baby dog called?",
+            "type": "vocabulary",
+            "options": [
+                "Kitten",
+                "Puppy",
+                "Cub",
+                "Lamb"
+            ],
+            "correctAnswer": "Puppy",
+            "createdAt": 1709653892038
+        },
+        "q39": {
+            "questionText": "Which planet is known as the Red Planet?",
+            "type": "vocabulary",
+            "options": [
+                "Venus",
+                "Mars",
+                "Jupiter",
+                "Saturn"
+            ],
+            "correctAnswer": "Mars",
+            "createdAt": 1709653892039
+        },
+        "q40": {
+            "questionText": "The opposite of 'Generous' is ___.",
+            "type": "vocabulary",
+            "options": [
+                "Kind",
+                "Mean",
+                "Happy",
+                "Rich"
+            ],
+            "correctAnswer": "Mean",
+            "createdAt": 1709653892040
+        },
+        "q41": {
+            "questionText": "Reorder: [school / to / goes / he / every day]",
+            "type": "sentence-ordering",
+            "options": [
+                "He goes to school every day",
+                "School to goes he every day",
+                "Every day he school goes to",
+                "Goes he to school every day"
+            ],
+            "correctAnswer": "He goes to school every day",
+            "createdAt": 1709653892041
+        },
+        "q42": {
+            "questionText": "Reorder: [is / weather / today / how / the]",
+            "type": "sentence-ordering",
+            "options": [
+                "How is the weather today",
+                "Today how is the weather",
+                "The weather today is how",
+                "Weather how is today the"
+            ],
+            "correctAnswer": "How is the weather today",
+            "createdAt": 1709653892042
+        },
+        "q43": {
+            "questionText": "Reorder: [love / I / English / learning]",
+            "type": "sentence-ordering",
+            "options": [
+                "I love learning English",
+                "Learning English I love",
+                "English love I learning",
+                "I English love learning"
+            ],
+            "correctAnswer": "I love learning English",
+            "createdAt": 1709653892043
+        },
+        "q44": {
+            "questionText": "Reorder: [cat / the / mat / on / sat / the]",
+            "type": "sentence-ordering",
+            "options": [
+                "The cat sat on the mat",
+                "On the mat sat the cat",
+                "The mat the cat on sat",
+                "Sat the cat on mat the"
+            ],
+            "correctAnswer": "The cat sat on the mat",
+            "createdAt": 1709653892044
+        },
+        "q45": {
+            "questionText": "Reorder: [breakfast / you / have / did]",
+            "type": "sentence-ordering",
+            "options": [
+                "Did you have breakfast",
+                "You did have breakfast",
+                "Breakfast did you have",
+                "Have you did breakfast"
+            ],
+            "correctAnswer": "Did you have breakfast",
+            "createdAt": 1709653892045
+        },
+        "q46": {
+            "questionText": "Reorder: [book / reading / is / she / a]",
+            "type": "sentence-ordering",
+            "options": [
+                "She is reading a book",
+                "Reading a book is she",
+                "A book she reading is",
+                "Is she a book reading"
+            ],
+            "correctAnswer": "She is reading a book",
+            "createdAt": 1709653892046
+        },
+        "q47": {
+            "questionText": "Reorder: [where / live / do / you]",
+            "type": "sentence-ordering",
+            "options": [
+                "Where do you live",
+                "Do you live where",
+                "You where live do",
+                "Live where do you"
+            ],
+            "correctAnswer": "Where do you live",
+            "createdAt": 1709653892047
+        },
+        "q48": {
+            "questionText": "Reorder: [fast / car / the / is / very]",
+            "type": "sentence-ordering",
+            "options": [
+                "The car is very fast",
+                "Very fast the car is",
+                "The car very fast is",
+                "Is the car very fast"
+            ],
+            "correctAnswer": "The car is very fast",
+            "createdAt": 1709653892048
+        },
+        "q49": {
+            "questionText": "Reorder: [will / tomorrow / visit / we / you]",
+            "type": "sentence-ordering",
+            "options": [
+                "We will visit you tomorrow",
+                "Tomorrow we will visit you",
+                "You will visit we tomorrow",
+                "Will we you visit tomorrow"
+            ],
+            "correctAnswer": "We will visit you tomorrow",
+            "createdAt": 1709653892049
+        },
+        "q50": {
+            "questionText": "Reorder: [name / your / what / is]",
+            "type": "sentence-ordering",
+            "options": [
+                "What is your name",
+                "Your name what is",
+                "Is your name what",
+                "Name what is your"
+            ],
+            "correctAnswer": "What is your name",
+            "createdAt": 1709653892050
+        },
+        "q51": {
+            "questionText": "Reorder: [many / how / siblings / have / you / do]",
+            "type": "sentence-ordering",
+            "options": [
+                "How many siblings do you have",
+                "Do you have how many siblings",
+                "Siblings many how do you have",
+                "How do you have many siblings"
+            ],
+            "correctAnswer": "How many siblings do you have",
+            "createdAt": 1709653892051
+        },
+        "q52": {
+            "questionText": "Reorder: [cake / delicious / this / is]",
+            "type": "sentence-ordering",
+            "options": [
+                "This cake is delicious",
+                "Delicious cake this is",
+                "Is this cake delicious",
+                "This is delicious cake"
+            ],
+            "correctAnswer": "This cake is delicious",
+            "createdAt": 1709653892052
+        },
+        "q53": {
+            "questionText": "Reorder: [soccer / they / park / the / in / play]",
+            "type": "sentence-ordering",
+            "options": [
+                "They play soccer in the park",
+                "The park they play soccer in",
+                "Soccer they in the park play",
+                "In the park play they soccer"
+            ],
+            "correctAnswer": "They play soccer in the park",
+            "createdAt": 1709653892053
+        },
+        "q54": {
+            "questionText": "Reorder: [doctor / wants / he / to / be / a]",
+            "type": "sentence-ordering",
+            "options": [
+                "He wants to be a doctor",
+                "A doctor he wants to be",
+                "To be a doctor he wants",
+                "He to be wants a doctor"
+            ],
+            "correctAnswer": "He wants to be a doctor",
+            "createdAt": 1709653892054
+        },
+        "q55": {
+            "questionText": "Reorder: [time / what / is / it]",
+            "type": "sentence-ordering",
+            "options": [
+                "What time is it",
+                "It is what time",
+                "Time is it what",
+                "Is it what time"
+            ],
+            "correctAnswer": "What time is it",
+            "createdAt": 1709653892055
+        },
+        "q56": {
+            "questionText": "Reorder: [apple / an / a / day / keeps / doctor / the / away]",
+            "type": "sentence-ordering",
+            "options": [
+                "An apple a day keeps the doctor away",
+                "An apple keeps the doctor a day away",
+                "A day an apple keeps away the doctor",
+                "Keeps the doctor away an apple a day"
+            ],
+            "correctAnswer": "An apple a day keeps the doctor away",
+            "createdAt": 1709653892056
+        },
+        "q57": {
+            "questionText": "Reorder: [music / listening / she / to / enjoys]",
+            "type": "sentence-ordering",
+            "options": [
+                "She enjoys listening to music",
+                "Listening to music she enjoys",
+                "She listening to music enjoys",
+                "Music she to listening enjoys"
+            ],
+            "correctAnswer": "She enjoys listening to music",
+            "createdAt": 1709653892057
+        },
+        "q58": {
+            "questionText": "Reorder: [movie / was / the / scary / very]",
+            "type": "sentence-ordering",
+            "options": [
+                "The movie was very scary",
+                "Very scary the movie was",
+                "Was very scary the movie",
+                "The movie very was scary"
+            ],
+            "correctAnswer": "The movie was very scary",
+            "createdAt": 1709653892058
+        },
+        "q59": {
+            "questionText": "Reorder: [phone / cell / is / my / where]",
+            "type": "sentence-ordering",
+            "options": [
+                "Where is my cell phone",
+                "My cell phone is where",
+                "Is where my cell phone",
+                "Where my cell phone is"
+            ],
+            "correctAnswer": "Where is my cell phone",
+            "createdAt": 1709653892059
+        },
+        "q60": {
+            "questionText": "Reorder: [dinner / cooking / my / is / mother]",
+            "type": "sentence-ordering",
+            "options": [
+                "My mother is cooking dinner",
+                "Cooking dinner my mother is",
+                "Dinner my mother is cooking",
+                "Is cooking dinner my mother"
+            ],
+            "correctAnswer": "My mother is cooking dinner",
+            "createdAt": 1709653892060
+        },
+        "q61": {
+            "questionText": "Fix the error: She don't like apples.",
+            "type": "error-correction",
+            "options": [
+                "She doesn't like apples",
+                "She don't like apples",
+                "She not like apples",
+                "She no like apples"
+            ],
+            "correctAnswer": "She doesn't like apples",
+            "createdAt": 1709653892061
+        },
+        "q62": {
+            "questionText": "Fix the error: I am having two brothers.",
+            "type": "error-correction",
+            "options": [
+                "I have two brothers",
+                "I am having two brothers",
+                "I having two brothers",
+                "I has two brothers"
+            ],
+            "correctAnswer": "I have two brothers",
+            "createdAt": 1709653892062
+        },
+        "q63": {
+            "questionText": "Fix the error: He go to work by bus.",
+            "type": "error-correction",
+            "options": [
+                "He goes to work by bus",
+                "He go to work by bus",
+                "He going to work by bus",
+                "He gone to work by bus"
+            ],
+            "correctAnswer": "He goes to work by bus",
+            "createdAt": 1709653892063
+        },
+        "q64": {
+            "questionText": "Fix the error: Where you did go?",
+            "type": "error-correction",
+            "options": [
+                "Where did you go",
+                "Where you did go",
+                "Where go you did",
+                "Did where you go"
+            ],
+            "correctAnswer": "Where did you go",
+            "createdAt": 1709653892064
+        },
+        "q65": {
+            "questionText": "Fix the error: I more taller than him.",
+            "type": "error-correction",
+            "options": [
+                "I am taller than him",
+                "I more taller than him",
+                "I am more taller than him",
+                "I tallest than him"
+            ],
+            "correctAnswer": "I am taller than him",
+            "createdAt": 1709653892065
+        },
+        "q66": {
+            "questionText": "Fix the error: They was playing in the garden.",
+            "type": "error-correction",
+            "options": [
+                "They were playing in the garden",
+                "They was playing in the garden",
+                "They are playing in the garden",
+                "They be playing in the garden"
+            ],
+            "correctAnswer": "They were playing in the garden",
+            "createdAt": 1709653892066
+        },
+        "q67": {
+            "questionText": "Fix the error: My friend live in Cairo.",
+            "type": "error-correction",
+            "options": [
+                "My friend lives in Cairo",
+                "My friend live in Cairo",
+                "My friend living in Cairo",
+                "My friend lived in Cairo"
+            ],
+            "correctAnswer": "My friend lives in Cairo",
+            "createdAt": 1709653892067
+        },
+        "q68": {
+            "questionText": "Fix the error: She is more prettier.",
+            "type": "error-correction",
+            "options": [
+                "She is prettier",
+                "She is more prettier",
+                "She is most pretty",
+                "She prettier"
+            ],
+            "correctAnswer": "She is prettier",
+            "createdAt": 1709653892068
+        },
+        "q69": {
+            "questionText": "Fix the error: I can to swim.",
+            "type": "error-correction",
+            "options": [
+                "I can swim",
+                "I can to swim",
+                "I can swimming",
+                "I can to swimming"
+            ],
+            "correctAnswer": "I can swim",
+            "createdAt": 1709653892069
+        },
+        "q70": {
+            "questionText": "Fix the error: Have you see my keys?",
+            "type": "error-correction",
+            "options": [
+                "Have you seen my keys",
+                "Have you see my keys",
+                "Did you seen my keys",
+                "Have you saw my keys"
+            ],
+            "correctAnswer": "Have you seen my keys",
+            "createdAt": 1709653892070
+        },
+        "q71": {
+            "questionText": "Fix the error: It's a hour long.",
+            "type": "error-correction",
+            "options": [
+                "It's an hour long",
+                "It's a hour long",
+                "It's the hour long",
+                "It's one hour long"
+            ],
+            "correctAnswer": "It's an hour long",
+            "createdAt": 1709653892071
+        },
+        "q72": {
+            "questionText": "Fix the error: He speak English good.",
+            "type": "error-correction",
+            "options": [
+                "He speaks English well",
+                "He speak English good",
+                "He speaks English good",
+                "He speak English well"
+            ],
+            "correctAnswer": "He speaks English well",
+            "createdAt": 1709653892072
+        },
+        "q73": {
+            "questionText": "Fix the error: I have 10 years old.",
+            "type": "error-correction",
+            "options": [
+                "I am 10 years old",
+                "I have 10 years old",
+                "I got 10 years old",
+                "I being 10 years old"
+            ],
+            "correctAnswer": "I am 10 years old",
+            "createdAt": 1709653892073
+        },
+        "q74": {
+            "questionText": "Fix the error: We was at the cinema.",
+            "type": "error-correction",
+            "options": [
+                "We were at the cinema",
+                "We was at the cinema",
+                "We is at the cinema",
+                "We be at the cinema"
+            ],
+            "correctAnswer": "We were at the cinema",
+            "createdAt": 1709653892074
+        },
+        "q75": {
+            "questionText": "Fix the error: Everybody are happy.",
+            "type": "error-correction",
+            "options": [
+                "Everybody is happy",
+                "Everybody are happy",
+                "Everybody be happy",
+                "Everybody were happy"
+            ],
+            "correctAnswer": "Everybody is happy",
+            "createdAt": 1709653892075
+        },
+        "q76": {
+            "questionText": "Fix the error: I am looking for a work.",
+            "type": "error-correction",
+            "options": [
+                "I am looking for a job",
+                "I am looking for a work",
+                "I am looking for work",
+                "I am looking for jobs"
+            ],
+            "correctAnswer": "I am looking for a job",
+            "createdAt": 1709653892076
+        },
+        "q77": {
+            "questionText": "Fix the error: She did not saw me.",
+            "type": "error-correction",
+            "options": [
+                "She did not see me",
+                "She did not saw me",
+                "She not saw me",
+                "She not did see me"
+            ],
+            "correctAnswer": "She did not see me",
+            "createdAt": 1709653892077
+        },
+        "q78": {
+            "questionText": "Fix the error: Who's car is this?",
+            "type": "error-correction",
+            "options": [
+                "Whose car is this",
+                "Who's car is this",
+                "Who car is this",
+                "Whom car is this"
+            ],
+            "correctAnswer": "Whose car is this",
+            "createdAt": 1709653892078
+        },
+        "q79": {
+            "questionText": "Fix the error: Please lend me a pen?",
+            "type": "error-correction",
+            "options": [
+                "Please lend me a pen.",
+                "Please lend me a pen?",
+                "Please lend me a pen!",
+                "Lend please me a pen."
+            ],
+            "correctAnswer": "Please lend me a pen.",
+            "createdAt": 1709653892079
+        },
+        "q80": {
+            "questionText": "Fix the error: I go every day to school.",
+            "type": "error-correction",
+            "options": [
+                "I go to school every day",
+                "I go every day to school",
+                "Every day I school go",
+                "I every day go to school"
+            ],
+            "correctAnswer": "I go to school every day",
+            "createdAt": 1709653892080
+        },
+        "q81": {
+            "questionText": "Which of these is a noun?",
+            "type": "multiple-choice",
+            "options": [
+                "Run",
+                "Happy",
+                "Table",
+                "Quickly"
+            ],
+            "correctAnswer": "Table",
+            "createdAt": 1709653892081
+        },
+        "q82": {
+            "questionText": "Which is a synonym for 'Sad'?",
+            "type": "multiple-choice",
+            "options": [
+                "Joyful",
+                "Unhappy",
+                "Angry",
+                "Calm"
+            ],
+            "correctAnswer": "Unhappy",
+            "createdAt": 1709653892082
+        },
+        "q83": {
+            "questionText": "Choose the correct spelling:",
+            "type": "multiple-choice",
+            "options": [
+                "Receive",
+                "Recieve",
+                "Receve",
+                "Reseive"
+            ],
+            "correctAnswer": "Receive",
+            "createdAt": 1709653892083
+        },
+        "q84": {
+            "questionText": "What is the plural of 'Foot'?",
+            "type": "multiple-choice",
+            "options": [
+                "Foots",
+                "Feet",
+                "Feets",
+                "Footes"
+            ],
+            "correctAnswer": "Feet",
+            "createdAt": 1709653892084
+        },
+        "q85": {
+            "questionText": "Which is an exclamation?",
+            "type": "multiple-choice",
+            "options": [
+                "Stop!",
+                "Where?",
+                "I am.",
+                "Hello."
+            ],
+            "correctAnswer": "Stop!",
+            "createdAt": 1709653892085
+        },
+        "q86": {
+            "questionText": "Choose the odd one out:",
+            "type": "multiple-choice",
+            "options": [
+                "Banana",
+                "Apple",
+                "Carrot",
+                "Mango"
+            ],
+            "correctAnswer": "Carrot",
+            "createdAt": 1709653892086
+        },
+        "q87": {
+            "questionText": "Which is a conjunction?",
+            "type": "multiple-choice",
+            "options": [
+                "Wait",
+                "And",
+                "Blue",
+                "Tall"
+            ],
+            "correctAnswer": "And",
+            "createdAt": 1709653892087
+        },
+        "q88": {
+            "questionText": "What is the plural of 'Child'?",
+            "type": "multiple-choice",
+            "options": [
+                "Children",
+                "Childs",
+                "Childrens",
+                "Childes"
+            ],
+            "correctAnswer": "Children",
+            "createdAt": 1709653892088
+        },
+        "q89": {
+            "questionText": "Which word is an adverb?",
+            "type": "multiple-choice",
+            "options": [
+                "Slow",
+                "Slowly",
+                "Slower",
+                "Slowest"
+            ],
+            "correctAnswer": "Slowly",
+            "createdAt": 1709653892089
+        },
+        "q90": {
+            "questionText": "Choose the correct article: ___ university.",
+            "type": "multiple-choice",
+            "options": [
+                "a",
+                "an",
+                "the",
+                "zero"
+            ],
+            "correctAnswer": "a",
+            "createdAt": 1709653892090
+        },
+        "q91": {
+            "questionText": "Which month has 28 or 29 days?",
+            "type": "multiple-choice",
+            "options": [
+                "January",
+                "February",
+                "March",
+                "April"
+            ],
+            "correctAnswer": "February",
+            "createdAt": 1709653892091
+        },
+        "q92": {
+            "questionText": "What do you call a person who makes bread?",
+            "type": "multiple-choice",
+            "options": [
+                "Baker",
+                "Butcher",
+                "Tailor",
+                "Chef"
+            ],
+            "correctAnswer": "Baker",
+            "createdAt": 1709653892092
+        },
+        "q93": {
+            "questionText": "Which is a question word?",
+            "type": "multiple-choice",
+            "options": [
+                "Some",
+                "Very",
+                "How",
+                "Then"
+            ],
+            "correctAnswer": "How",
+            "createdAt": 1709653892093
+        },
+        "q94": {
+            "questionText": "Which of these is a past tense?",
+            "type": "multiple-choice",
+            "options": [
+                "Walk",
+                "Walking",
+                "Walked",
+                "Walks"
+            ],
+            "correctAnswer": "Walked",
+            "createdAt": 1709653892094
+        },
+        "q95": {
+            "questionText": "Choose the synonym for 'Beautiful':",
+            "type": "multiple-choice",
+            "options": [
+                "Ugly",
+                "Gorgeous",
+                "Plain",
+                "Horrible"
+            ],
+            "correctAnswer": "Gorgeous",
+            "createdAt": 1709653892095
+        },
+        "q96": {
+            "questionText": "What is 'ASAP' short for?",
+            "type": "multiple-choice",
+            "options": [
+                "As soon as possible",
+                "Always say a prayer",
+                "Apples stay at park",
+                "All students are proud"
+            ],
+            "correctAnswer": "As soon as possible",
+            "createdAt": 1709653892096
+        },
+        "q97": {
+            "questionText": "Which is a preposition?",
+            "type": "multiple-choice",
+            "options": [
+                "In",
+                "Go",
+                "Fast",
+                "Wait"
+            ],
+            "correctAnswer": "In",
+            "createdAt": 1709653892097
+        },
+        "q98": {
+            "questionText": "What is the opposite of 'Top'?",
+            "type": "multiple-choice",
+            "options": [
+                "Side",
+                "Bottom",
+                "Middle",
+                "Near"
+            ],
+            "correctAnswer": "Bottom",
+            "createdAt": 1709653892098
+        },
+        "q99": {
+            "questionText": "Which is a pronoun?",
+            "type": "multiple-choice",
+            "options": [
+                "They",
+                "Think",
+                "Town",
+                "Total"
+            ],
+            "correctAnswer": "They",
+            "createdAt": 1709653892099
+        },
+        "q100": {
+            "questionText": "Choose the correct contraction for 'It is':",
+            "type": "multiple-choice",
+            "options": [
+                "Its",
+                "It's",
+                "I'ts",
+                "Its'"
+            ],
+            "correctAnswer": "It's",
+            "createdAt": 1709653892100
+        }
+    },
+    "dailyResults": {},
+    "config": {
+        "quizSize": 5,
+        "currentExamDate": null,
+        "currentExamQuestions": []
+    }
+}

@@ -5,6 +5,8 @@
   "scripts": {
     "start": "node server.js",
     "test:e2e": "playwright test",
+    "postinstall": "node scripts/sync-seed-data.js",
+    "sync:seed": "node scripts/sync-seed-data.js",
     "seed:kv": "node scripts/seed-vercel-kv.js"
   },
   "dependencies": {

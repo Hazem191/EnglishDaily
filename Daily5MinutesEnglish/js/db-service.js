@@ -8,7 +8,7 @@
    ======================================== */
 
 const DB_KEY = 'daily_english_db';
-const DB_VERSION = '10';  // server-authoritative sync across devices
+const DB_VERSION = '11';  // bundled Redis seed + empty-server recovery
 const DB_VER_KEY = 'daily_english_db_version';
 const API_SECRET = 'daily-english-secure-2025-key'; // ← Must match api.php
 const API_TIMEOUT_MS = 25000;
@@ -175,6 +175,9 @@ const DB = {
                 } else {
                     this.lastSyncError = `HTTP ${response.status}`;
                     console.warn('API GET failed:', response.status);
+                    if (response.status === 404) {
+                        this.serverReachable = true;
+                    }
                 }
             } catch (e) {
                 this.serverReachable = false;
@@ -192,6 +195,17 @@ const DB = {
                 finalData = _deepMergeDefaults(currentLocal, defaultData);
             } else {
                 finalData = JSON.parse(JSON.stringify(defaultData));
+            }
+
+            if (!remoteData && this.lastSyncError === 'HTTP 404') {
+                try {
+                    const seeded = await this.syncWithServer(finalData);
+                    if (seeded && await this.reloadFromServer()) {
+                        finalData = this.get();
+                    }
+                } catch (e) {
+                    console.warn('Could not seed empty server:', e);
+                }
             }
 
             _ensureSeedAccounts(finalData);

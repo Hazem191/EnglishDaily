@@ -10,11 +10,6 @@ const path = require('path');
 
 const KV_KEY = 'daily_english_db';
 
-const fs = require('fs');
-const path = require('path');
-
-const KV_KEY = 'daily_english_db';
-
 function loadEnvLocal() {
   const envPath = path.join(__dirname, '..', '.env.local');
   if (!fs.existsSync(envPath)) return;
@@ -32,25 +27,66 @@ function loadEnvLocal() {
   }
 }
 
+function hasRestEnv() {
+  return Boolean(
+    (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) ||
+    (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN)
+  );
+}
+
+async function seedWithRest(data) {
+  const { Redis } = require('@upstash/redis');
+  let redis;
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    redis = Redis.fromEnv();
+  } else {
+    redis = new Redis({
+      url: process.env.KV_REST_API_URL,
+      token: process.env.KV_REST_API_TOKEN
+    });
+  }
+  await redis.set(KV_KEY, data);
+}
+
+async function seedWithUrl(data) {
+  const { createClient } = require('redis');
+  const client = createClient({ url: process.env.REDIS_URL });
+  await client.connect();
+  try {
+    await client.set(KV_KEY, JSON.stringify(data));
+  } finally {
+    await client.quit();
+  }
+}
+
 async function main() {
   loadEnvLocal();
-  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-    console.error('Missing UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN.');
-    console.error('Add Upstash Redis from Vercel Marketplace, then run: npx vercel env pull .env.local');
-    process.exit(1);
-  }
 
   const dbPath = path.join(__dirname, '..', 'db.json');
-  if (!fs.existsSync(dbPath)) {
-    console.error('db.json not found.');
+  const seedPath = path.join(__dirname, '..', 'lib', 'seed-data.json');
+  const source = fs.existsSync(dbPath) ? dbPath : seedPath;
+  if (!fs.existsSync(source)) {
+    console.error('db.json / lib/seed-data.json not found.');
     process.exit(1);
   }
 
-  const data = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-  const { Redis } = require('@upstash/redis');
-  const redis = Redis.fromEnv();
-  await redis.set(KV_KEY, data);
-  console.log('Seeded Upstash Redis from db.json');
+  const data = JSON.parse(fs.readFileSync(source, 'utf8'));
+
+  if (hasRestEnv()) {
+    await seedWithRest(data);
+    console.log('Seeded Redis (REST) from', path.basename(source));
+    return;
+  }
+
+  if (process.env.REDIS_URL) {
+    await seedWithUrl(data);
+    console.log('Seeded Redis (REDIS_URL) from', path.basename(source));
+    return;
+  }
+
+  console.error('No Redis env found. Set UPSTASH_REDIS_REST_* or KV_REST_API_* or REDIS_URL.');
+  console.error('Run: npx vercel env pull .env.local');
+  process.exit(1);
 }
 
 main().catch((err) => {
