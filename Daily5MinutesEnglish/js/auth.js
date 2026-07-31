@@ -153,6 +153,35 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 await DB.initPromise;
 
+                const response = await serverAuthRequest({ action: 'register', name, email, password });
+
+                if (response.ok) {
+                    const user = await response.json();
+                    auth.currentUser = { uid: user.uid, email: user.email };
+                    localStorage.setItem('logged_user', JSON.stringify(auth.currentUser));
+                    await DB.initPromise;
+                    showToast('Account created. Redirecting…', 'success');
+                    setTimeout(() => window.location.href = 'student.html', 800);
+                    return;
+                }
+
+                const errBody = await response.json().catch(() => ({}));
+                if (response.status === 409) {
+                    throw { code: 'auth/email-already-in-use', message: errBody.error || 'Email already in use.' };
+                }
+                throw new Error(errBody.error || 'Registration failed');
+            } catch (serverErr) {
+                if (serverErr?.code === 'auth/email-already-in-use') {
+                    errorEl.textContent = serverErr.message;
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span data-en="Create My Account" data-ar="إنشاء حسابي">Create My Account</span>';
+                    if (window.ui) ui.translate(submitBtn);
+                    return;
+                }
+                console.warn('Server register failed, trying local fallback:', serverErr?.message || serverErr);
+            }
+
+            try {
                 const credential = await auth.createUserWithEmailAndPassword(email, password);
                 const uid = credential.user.uid;
 

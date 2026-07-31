@@ -1,0 +1,4 @@
+db.json
+backups/
+.env
+.env.*

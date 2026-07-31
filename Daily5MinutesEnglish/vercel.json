@@ -8,8 +8,7 @@
     { "src": "*.html", "use": "@vercel/static" },
     { "src": "css/**", "use": "@vercel/static" },
     { "src": "js/**", "use": "@vercel/static" },
-    { "src": "*.svg", "use": "@vercel/static" },
-    { "src": "db.json", "use": "@vercel/static" }
+    { "src": "*.svg", "use": "@vercel/static" }
   ],
   "routes": [
     { "src": "/api.php", "dest": "/api/db" },

@@ -31,19 +31,28 @@ if ($clientToken !== API_SECRET) {
     exit;
 }
 
-// ── GET: Read Database ──
+// ── GET: Read Database (passwords stripped) ──
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (!file_exists($databaseFile)) {
         echo json_encode(["status" => "error", "message" => "Database not found"]);
         exit;
     }
-    // Read with shared lock
     $fp = fopen($databaseFile, 'r');
     if ($fp && flock($fp, LOCK_SH)) {
         $content = file_get_contents($databaseFile);
         flock($fp, LOCK_UN);
         fclose($fp);
-        echo $content;
+        $data = json_decode($content, true);
+        if (is_array($data) && isset($data['users'])) {
+            foreach (['admins', 'students'] as $role) {
+                if (!isset($data['users'][$role])) continue;
+                foreach ($data['users'][$role] as &$user) {
+                    unset($user['password']);
+                }
+                unset($user);
+            }
+        }
+        echo json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     } else {
         http_response_code(500);
         echo json_encode(["error" => "Could not obtain read lock"]);

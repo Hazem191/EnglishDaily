@@ -1,5 +1,6 @@
 const { mergeDatabase } = require('../lib/db-merge');
 const { loadDatabase, saveDatabase } = require('../lib/db-store');
+const { stripSensitiveFields } = require('../lib/sanitize-db');
 
 const API_SECRET = process.env.API_SECRET || 'daily-english-secure-2025-key';
 
@@ -34,7 +35,7 @@ async function handler(req, res) {
       if (!data) {
         return res.status(404).json({ status: 'error', message: 'Database not found' });
       }
-      return res.status(200).json(data);
+      return res.status(200).json(stripSensitiveFields(data));
     } catch (err) {
       console.error('GET /api/db failed:', err);
       return res.status(500).json({ error: 'Could not read database' });

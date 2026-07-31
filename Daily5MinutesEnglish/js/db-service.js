@@ -518,6 +518,29 @@ const MockAuth = {
 
     async signInWithEmailAndPassword(email, password) {
         await DB.initPromise;
+
+        try {
+            const response = await serverAuthRequest({ action: 'login', email, password });
+
+            if (response.ok) {
+                const user = await response.json();
+                this.currentUser = { uid: user.uid, email: user.email };
+                safeStorageSet('logged_user', JSON.stringify(this.currentUser));
+                return { user: this.currentUser };
+            }
+
+            if (response.status === 401) {
+                throw { code: 'auth/wrong-password', message: 'Incorrect email or password.' };
+            }
+        } catch (e) {
+            if (e?.code) throw e;
+            console.warn('Server auth unavailable, trying local fallback:', e?.message || e);
+        }
+
+        return this._localSignIn(email, password);
+    },
+
+    async _localSignIn(email, password) {
         const fullData = DB.get();
         const allUsers = {
             ...(fullData.users?.admins || {}),
@@ -598,6 +621,15 @@ window.firebase = { initializeApp: () => { }, auth: () => MockAuth, database: ()
 window.auth = MockAuth;
 window.rtdb = new MockRef();
 window.hashPassword = hashPassword; // expose for auth.js
+
+window.serverAuthRequest = (body) => fetchWithRetry('/api/auth', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'X-API-Token': API_SECRET
+    },
+    body: JSON.stringify(body)
+});
 
 window.getTodayString = () => new Date().toISOString().split('T')[0];
 
