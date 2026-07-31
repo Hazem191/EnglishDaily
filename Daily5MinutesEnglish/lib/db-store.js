@@ -22,13 +22,19 @@ function hasRedisEnv() {
 }
 
 function readSeedFromDisk() {
-  const seedPath = path.join(process.cwd(), 'db.json');
-  if (!fs.existsSync(seedPath)) return null;
-  try {
-    return JSON.parse(fs.readFileSync(seedPath, 'utf8'));
-  } catch {
-    return null;
+  const candidates = [
+    path.join(process.cwd(), 'db.json'),
+    path.join(__dirname, '..', 'db.json')
+  ];
+  for (const seedPath of candidates) {
+    if (!fs.existsSync(seedPath)) continue;
+    try {
+      return JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+    } catch {
+      /* try next */
+    }
   }
+  return null;
 }
 
 function getUpstashAdapter() {

@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const studentSnap = await rtdb.ref(`users/students/${uid}`).once('value');
                 if (studentSnap.exists()) {
                     const name = studentSnap.val().name || 'Student';
+                    await DB.reloadFromServer();
                     showToast(`Welcome back, ${name}.`, 'success');
                     setTimeout(() => window.location.href = 'student.html', 600);
                     return;
@@ -159,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const user = await response.json();
                     auth.currentUser = { uid: user.uid, email: user.email };
                     localStorage.setItem('logged_user', JSON.stringify(auth.currentUser));
-                    await DB.initPromise;
+                    await DB.reloadFromServer();
                     showToast('Account created. Redirecting…', 'success');
                     setTimeout(() => window.location.href = 'student.html', 800);
                     return;

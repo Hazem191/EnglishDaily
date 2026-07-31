@@ -8,7 +8,7 @@
    ======================================== */
 
 const DB_KEY = 'daily_english_db';
-const DB_VERSION = '9';   // bumped: plaintext password migration at init
+const DB_VERSION = '10';  // server-authoritative sync across devices
 const DB_VER_KEY = 'daily_english_db_version';
 const API_SECRET = 'daily-english-secure-2025-key'; // ← Must match api.php
 const API_TIMEOUT_MS = 25000;
@@ -186,8 +186,8 @@ const DB = {
             const currentLocal = localData ? JSON.parse(localData) : null;
 
             if (remoteData && !remoteData.error) {
+                // Server is the source of truth when reachable (fixes phone/laptop drift)
                 finalData = _deepMergeDefaults(remoteData, defaultData);
-                if (currentLocal) finalData = _deepMergeUsers(currentLocal, finalData);
             } else if (currentLocal) {
                 finalData = _deepMergeDefaults(currentLocal, defaultData);
             } else {
@@ -235,6 +235,35 @@ const DB = {
             );
         }
         return synced;
+    },
+
+    /** Pull latest data from server into localStorage (use after login or manual refresh). */
+    async reloadFromServer() {
+        try {
+            const apiUrl = await getApiUrl();
+            const response = await fetchWithRetry(apiUrl, {
+                headers: { 'X-API-Token': API_SECRET }
+            });
+            if (!response.ok) {
+                this.serverReachable = false;
+                this.lastSyncError = `HTTP ${response.status}`;
+                return false;
+            }
+            const remoteData = JSON.parse(await response.text());
+            if (!remoteData || remoteData.error) return false;
+
+            const finalData = _deepMergeDefaults(remoteData, defaultData);
+            safeStorageSet(DB_KEY, JSON.stringify(finalData));
+            safeStorageSet(DB_VER_KEY, DB_VERSION);
+            this.serverReachable = true;
+            this.lastSyncError = null;
+            this.notify();
+            return true;
+        } catch (e) {
+            this.serverReachable = false;
+            this.lastSyncError = e?.name === 'AbortError' ? 'timeout' : 'network';
+            return false;
+        }
     },
 
     async syncWithServer(data) {
@@ -289,7 +318,7 @@ const DB = {
      * Only triggers notify() when dailyResults or students actually changed.
      * This gives real-time-like behaviour for multi-user shared hosting.
      */
-    startPolling(intervalMs = 30000) {
+    startPolling(intervalMs = 15000) {
         if (this._pollInterval) clearInterval(this._pollInterval);
         this._pollInterval = setInterval(async () => {
             try {
@@ -298,21 +327,25 @@ const DB = {
                     headers: { 'X-API-Token': API_SECRET }
                 }, 1);
                 if (!response.ok) return;
-                const text = await response.text();
-                const remoteData = JSON.parse(text);
+                const remoteData = JSON.parse(await response.text());
                 if (!remoteData || remoteData.error) return;
 
                 const currentLocal = this.get();
-                const remoteResultsStr = JSON.stringify(remoteData.dailyResults);
-                const localResultsStr = JSON.stringify(currentLocal.dailyResults);
-                const remoteStudentsStr = JSON.stringify(remoteData.users?.students);
-                const localStudentsStr = JSON.stringify(currentLocal.users?.students);
+                const snapshot = (d) => JSON.stringify({
+                    students: d.users?.students,
+                    dailyResults: d.dailyResults,
+                    questions: d.questions,
+                    config: d.config
+                });
+                const remoteSnap = snapshot(remoteData);
+                const localSnap = snapshot(currentLocal);
 
-                if (remoteResultsStr !== localResultsStr || remoteStudentsStr !== localStudentsStr) {
-                    const merged = _deepMergeUsers(currentLocal, _deepMergeDefaults(remoteData, defaultData));
+                if (remoteSnap !== localSnap) {
+                    const merged = _deepMergeDefaults(remoteData, defaultData);
                     safeStorageSet(DB_KEY, JSON.stringify(merged));
+                    this.serverReachable = true;
                     this.notify();
-                    console.log('🔄 Real-time: data refreshed from server');
+                    console.log('🔄 Synced from server');
                 }
             } catch (e) { /* silent — server unreachable */ }
         }, intervalMs);
@@ -526,6 +559,7 @@ const MockAuth = {
                 const user = await response.json();
                 this.currentUser = { uid: user.uid, email: user.email };
                 safeStorageSet('logged_user', JSON.stringify(this.currentUser));
+                await DB.reloadFromServer();
                 return { user: this.currentUser };
             }
 
@@ -614,8 +648,8 @@ const MockAuth = {
 DB.initPromise = DB.init();
 DB.listenToStorage();
 
-// Start polling once init is done (30 s interval → real-time sync across users)
-DB.initPromise.then(() => DB.startPolling(30000));
+// Start polling once init is done (15s interval → cross-device sync)
+DB.initPromise.then(() => DB.startPolling(15000));
 
 window.firebase = { initializeApp: () => { }, auth: () => MockAuth, database: () => new MockRef() };
 window.auth = MockAuth;

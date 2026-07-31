@@ -93,6 +93,7 @@
 
                 const snap = await rtdb.ref(`users/admins/${uid}`).once('value');
                 if (snap.exists()) {
+                    await DB.reloadFromServer();
                     showToast('Signed in.', 'success');
                     setTimeout(() => window.location.href = 'teacher.html', 600);
                 } else {

@@ -1,5 +1,3 @@
 db.json
 backups/
 server.js
-.env
-.env.*
