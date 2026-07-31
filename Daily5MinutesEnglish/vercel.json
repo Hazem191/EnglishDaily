@@ -1,9 +1,22 @@
 {
   "version": 2,
-  "rewrites": [
-    { "source": "/api.php", "destination": "/api/db" },
-    { "source": "/db.json", "destination": "/api/protect-db" },
-    { "source": "/backups/:path*", "destination": "/api/protect-db" }
+  "buildCommand": "",
+  "installCommand": "npm install --omit=dev",
+  "framework": null,
+  "builds": [
+    { "src": "api/**/*.js", "use": "@vercel/node" },
+    { "src": "*.html", "use": "@vercel/static" },
+    { "src": "css/**", "use": "@vercel/static" },
+    { "src": "js/**", "use": "@vercel/static" },
+    { "src": "*.svg", "use": "@vercel/static" },
+    { "src": "db.json", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/api.php", "dest": "/api/db" },
+    { "src": "/db.json", "dest": "/api/protect-db" },
+    { "src": "/backups/(.*)", "dest": "/api/protect-db" },
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/(.*)", "dest": "/$1" }
   ],
   "headers": [
     {
