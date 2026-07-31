@@ -2,13 +2,18 @@
   "version": 2,
   "installCommand": "npm install --omit=dev",
   "builds": [
-    { "src": "api/*.js", "use": "@vercel/node" }
+    { "src": "api/*.js", "use": "@vercel/node" },
+    { "src": "*.html", "use": "@vercel/static" },
+    { "src": "css/**", "use": "@vercel/static" },
+    { "src": "js/**", "use": "@vercel/static" },
+    { "src": "*.svg", "use": "@vercel/static" }
   ],
   "routes": [
     { "src": "/api.php", "dest": "/api/db.js" },
     { "src": "/db.json", "dest": "/api/protect-db.js" },
     { "src": "/backups/(.*)", "dest": "/api/protect-db.js" },
     { "src": "/api/(.*)", "dest": "/api/$1.js" },
+    { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/$1" }
   ]
 }
