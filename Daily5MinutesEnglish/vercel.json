@@ -1,19 +1,41 @@
 {
-  "version": 2,
   "installCommand": "npm install --omit=dev",
-  "builds": [
-    { "src": "api/**/*.js", "use": "@vercel/node" },
-    { "src": "*.html", "use": "@vercel/static" },
-    { "src": "css/**", "use": "@vercel/static" },
-    { "src": "js/**", "use": "@vercel/static" },
-    { "src": "*.svg", "use": "@vercel/static" }
+  "rewrites": [
+    { "source": "/api.php", "destination": "/api/db" },
+    { "source": "/db.json", "destination": "/api/protect-db" },
+    { "source": "/backups/:path*", "destination": "/api/protect-db" }
   ],
-  "routes": [
-    { "src": "/api.php", "dest": "/api/db" },
-    { "src": "/db.json", "dest": "/api/protect-db" },
-    { "src": "/backups/(.*)", "dest": "/api/protect-db" },
-    { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/$1" }
+  "functions": {
+    "api/db.js": {
+      "maxDuration": 30,
+      "includeFiles": "lib/**"
+    },
+    "api/auth.js": {
+      "maxDuration": 15,
+      "includeFiles": "lib/**"
+    },
+    "api/health.js": {
+      "maxDuration": 10,
+      "includeFiles": "lib/**"
+    },
+    "api/protect-db.js": {
+      "maxDuration": 5
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    },
+    {
+      "source": "/js/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    }
   ]
 }
