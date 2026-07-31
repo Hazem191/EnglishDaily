@@ -1,7 +1,5 @@
 const crypto = require('crypto');
-const { loadDatabase, saveDatabase } = require('../lib/db-store');
-
-const API_SECRET = process.env.API_SECRET || 'daily-english-secure-2025-key';
+const { loadDatabase, saveDatabase, readSeed } = require('../lib/db-store');
 
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -56,8 +54,28 @@ async function handleLogin(body, res) {
   }
 
   const [uid, user, role] = match;
-  const stored = user.password || '';
+  let stored = user.password || '';
   const hashedInput = hashPassword(password);
+
+  if (!stored) {
+    const seed = readSeed();
+    const seedUsers = { ...(seed?.users?.admins || {}), ...(seed?.users?.students || {}) };
+    const seedMatch = Object.values(seedUsers).find(
+      (u) => (u.email || '').trim().toLowerCase() === email && u.password
+    );
+    if (seedMatch?.password) {
+      stored = seedMatch.password;
+      const upgraded = JSON.parse(JSON.stringify(data));
+      if (role === 'teacher') upgraded.users.admins[uid].password = stored;
+      else upgraded.users.students[uid].password = stored;
+      try {
+        await saveDatabase(upgraded);
+      } catch (err) {
+        console.error('Could not persist restored password:', err.message);
+      }
+    }
+  }
+
   const ok = isHashed(stored) ? stored === hashedInput : stored === password;
   if (!ok) {
     return res.status(401).json({ error: 'Invalid credentials' });
@@ -135,23 +153,19 @@ async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const token = req.headers['x-api-token'] || '';
-  if (token !== API_SECRET) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
   const body = parseBody(req);
   if (!body?.action) {
     return res.status(400).json({ error: 'Missing action' });
   }
 
+  // Login/register are public — credentials are verified server-side.
   try {
     if (body.action === 'login') return await handleLogin(body, res);
     if (body.action === 'register') return await handleRegister(body, res);
     return res.status(400).json({ error: 'Unknown action' });
   } catch (err) {
     console.error('auth error:', err);
-    return res.status(500).json({ error: 'Authentication failed' });
+    return res.status(500).json({ error: err.message || 'Authentication failed' });
   }
 }
 

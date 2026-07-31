@@ -611,12 +611,6 @@ const MockAuth = {
             const errBody = await response.json().catch(() => ({}));
 
             if (response.status === 401) {
-                if (errBody.error === 'Unauthorized') {
-                    throw {
-                        code: 'auth/server-error',
-                        message: 'Server configuration error. Contact the site administrator.'
-                    };
-                }
                 throw { code: 'auth/wrong-password', message: 'Incorrect email or password.' };
             }
 
@@ -724,10 +718,7 @@ window.hashPassword = hashPassword; // expose for auth.js
 
 window.serverAuthRequest = (body) => fetchWithRetry('/api/auth', {
     method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-        'X-API-Token': API_SECRET
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
 });
 

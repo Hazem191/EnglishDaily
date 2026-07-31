@@ -186,8 +186,12 @@ async function loadDatabase() {
         console.log('Seeded Redis from bundled seed-data.json');
       }
     } else if (repairPasswordsFromSeed(data)) {
-      await store.set(KV_KEY, data);
-      console.log('Repaired missing account passwords from seed');
+      try {
+        await store.set(KV_KEY, data);
+        console.log('Repaired missing account passwords from seed');
+      } catch (err) {
+        console.error('Password repair save failed:', err.message);
+      }
     }
     return data || null;
   }
@@ -222,5 +226,6 @@ module.exports = {
   loadDatabase,
   saveDatabase,
   hasRedisEnv,
+  readSeed,
   KV_KEY
 };
