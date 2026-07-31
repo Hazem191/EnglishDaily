@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/api.php", "destination": "/api/db" },
+    { "source": "/db.json", "destination": "/api/protect-db" },
+    { "source": "/backups/:path*", "destination": "/api/protect-db" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" }
+      ]
+    }
+  ]
+}

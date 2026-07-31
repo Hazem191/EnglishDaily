@@ -5,9 +5,11 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "seed:kv": "node scripts/seed-vercel-kv.js"
   },
   "dependencies": {
+    "@upstash/redis": "^1.38.1",
     "express": "^4.18.2"
   },
   "devDependencies": {
