@@ -71,28 +71,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const credential = await auth.signInWithEmailAndPassword(email, password);
-                const uid = credential.user.uid;
+                const role = credential.role || credential.user?.role;
 
-                // Check Admin
-                const adminSnap = await rtdb.ref(`users/admins/${uid}`).once('value');
-                if (adminSnap.exists()) {
+                if (role === 'teacher') {
                     showToast('Welcome back.', 'success');
                     setTimeout(() => window.location.href = 'teacher.html', 600);
                     return;
                 }
 
-                // Check Student
-                const studentSnap = await rtdb.ref(`users/students/${uid}`).once('value');
-                if (studentSnap.exists()) {
-                    const name = studentSnap.val().name || 'Student';
-                    await DB.reloadFromServer();
+                if (role === 'student') {
+                    const name = credential.user?.name || 'Student';
                     showToast(`Welcome back, ${name}.`, 'success');
                     setTimeout(() => window.location.href = 'student.html', 600);
                     return;
                 }
 
                 errorEl.textContent = 'Incorrect email or password.';
-                auth.signOut();
+                localStorage.removeItem('logged_user');
+                auth.currentUser = null;
             } catch (error) {
                 console.error('Login error:', error);
                 const msgs = {
@@ -101,6 +97,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     'auth/too-many-requests': 'Too many attempts. Try again later.',
                     'auth/invalid-credential': 'Incorrect email or password.',
                     'auth/user-not-found': 'Incorrect email or password.',
+                    'auth/network': window.ui?.lang === 'ar'
+                        ? 'تعذر الاتصال بالسيرفر. تحقق من الإنترنت وحاول مرة أخرى.'
+                        : 'Cannot reach server. Check your internet connection.',
+                    'auth/server-error': window.ui?.lang === 'ar'
+                        ? 'خطأ من السيرفر. حاول مرة أخرى بعد قليل.'
+                        : 'Server error. Please try again.',
                     'auth/unsupported': window.ui?.lang === 'ar'
                         ? 'افتح الموقع عبر HTTPS (الرابط الرسمي على Vercel).'
                         : 'Open the site via HTTPS (official Vercel link).',
@@ -158,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (response.ok) {
                     const user = await response.json();
-                    auth.currentUser = { uid: user.uid, email: user.email };
+                    auth.currentUser = { uid: user.uid, email: user.email, role: user.role, name: user.name };
                     localStorage.setItem('logged_user', JSON.stringify(auth.currentUser));
                     await DB.reloadFromServer();
                     showToast('Account created. Redirecting…', 'success');
@@ -168,54 +170,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const errBody = await response.json().catch(() => ({}));
                 if (response.status === 409) {
-                    throw { code: 'auth/email-already-in-use', message: errBody.error || 'Email already in use.' };
-                }
-                throw new Error(errBody.error || 'Registration failed');
-            } catch (serverErr) {
-                if (serverErr?.code === 'auth/email-already-in-use') {
-                    errorEl.textContent = serverErr.message;
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<span data-en="Create My Account" data-ar="إنشاء حسابي">Create My Account</span>';
-                    if (window.ui) ui.translate(submitBtn);
-                    return;
-                }
-                console.warn('Server register failed, trying local fallback:', serverErr?.message || serverErr);
-            }
-
-            try {
-                const credential = await auth.createUserWithEmailAndPassword(email, password);
-                const uid = credential.user.uid;
-
-                const hashedPw = await hashPassword(password);
-                await rtdb.ref(`users/students/${uid}`).set({
-                    id: uid,
-                    name,
-                    email,
-                    password: hashedPw,
-                    role: 'student',
-                    totalScore: 0,
-                    createdAt: Date.now()
-                });
-
-                if (!DB.serverReachable) {
                     errorEl.textContent = window.ui?.lang === 'ar'
-                        ? 'تم إنشاء الحساب محلياً لكن فشل الحفظ على السيرفر. تحقق من الإنترنت وأعد المحاولة.'
-                        : 'Account created locally but server save failed. Check connection and try again.';
-                    auth.signOut();
-                    return;
+                        ? 'البريد الإلكتروني مستخدم بالفعل.'
+                        : (errBody.error || 'Email already in use.');
+                } else {
+                    errorEl.textContent = window.ui?.lang === 'ar'
+                        ? 'فشل إنشاء الحساب على السيرفر. حاول مرة أخرى.'
+                        : (errBody.error || 'Registration failed. Please try again.');
                 }
-
-                showToast('Account created. Redirecting…', 'success');
-                setTimeout(() => window.location.href = 'student.html', 800);
-
             } catch (error) {
                 console.error('Registration error:', error);
-                const msgs = {
-                    'auth/email-already-in-use': 'Email already in use.',
-                    'auth/invalid-email': 'Invalid email address.',
-                    'auth/weak-password': 'Password too weak.',
-                };
-                errorEl.textContent = msgs[error.code] || error.message;
+                errorEl.textContent = window.ui?.lang === 'ar'
+                    ? 'تعذر الاتصال بالسيرفر. تحقق من الإنترنت وحاول مرة أخرى.'
+                    : 'Cannot reach server. Check your internet connection.';
+            } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<span data-en="Create My Account" data-ar="إنشاء حسابي">Create My Account</span>';
                 if (window.ui) ui.translate(submitBtn);

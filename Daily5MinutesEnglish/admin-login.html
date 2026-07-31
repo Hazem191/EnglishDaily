@@ -88,30 +88,46 @@
 
             try {
                 await DB.initPromise;
-                const userCredential = await auth.signInWithEmailAndPassword(email, password);
-                const uid = userCredential.user.uid;
+                const credential = await auth.signInWithEmailAndPassword(email, password);
+                const role = credential.role || credential.user?.role;
 
-                const snap = await rtdb.ref(`users/admins/${uid}`).once('value');
-                if (snap.exists()) {
+                if (role === 'teacher') {
                     await DB.reloadFromServer();
                     showToast('Signed in.', 'success');
                     setTimeout(() => window.location.href = 'teacher.html', 600);
                 } else {
-                    console.warn("⛔ Unauthorized: UID not in admin list", uid);
-                    errorEl.textContent = 'Unauthorized: Administrative access only.';
-                    auth.signOut();
-                    btn.disabled = false; btn.textContent = 'Enter Dashboard';
+                    console.warn("⛔ Unauthorized: not a teacher account", credential.user?.uid);
+                    errorEl.textContent = window.ui?.lang === 'ar'
+                        ? 'غير مصرح: دخول المعلمين فقط.'
+                        : 'Unauthorized: Administrative access only.';
+                    localStorage.removeItem('logged_user');
+                    auth.currentUser = null;
+                    btn.disabled = false;
+                    btn.innerHTML = '<span data-en="Sign in" data-ar="دخول">Sign in</span>';
+                    if (window.ui) ui.translate(btn);
                 }
             } catch (error) {
                 console.error('Admin Login error:', error);
                 if (error?.code === 'auth/unsupported') {
-                    errorEl.textContent = 'Open the site via HTTPS (official link).';
-                } else if (!DB.serverReachable) {
-                    errorEl.textContent = 'Cannot reach server. Check your internet connection.';
+                    errorEl.textContent = window.ui?.lang === 'ar'
+                        ? 'افتح الموقع عبر HTTPS (الرابط الرسمي).'
+                        : 'Open the site via HTTPS (official link).';
+                } else if (error?.code === 'auth/network') {
+                    errorEl.textContent = window.ui?.lang === 'ar'
+                        ? 'تعذر الاتصال بالسيرفر. تحقق من الإنترنت.'
+                        : 'Cannot reach server. Check your internet connection.';
+                } else if (error?.code === 'auth/wrong-password') {
+                    errorEl.textContent = window.ui?.lang === 'ar'
+                        ? 'البريد أو كلمة المرور غير صحيحة.'
+                        : 'Invalid email or password.';
                 } else {
-                    errorEl.textContent = 'Invalid email or password.';
+                    errorEl.textContent = error?.message || (window.ui?.lang === 'ar'
+                        ? 'فشل تسجيل الدخول. حاول مرة أخرى.'
+                        : 'Login failed. Please try again.');
                 }
-                btn.disabled = false; btn.textContent = 'Enter Dashboard';
+                btn.disabled = false;
+                btn.innerHTML = '<span data-en="Sign in" data-ar="دخول">Sign in</span>';
+                if (window.ui) ui.translate(btn);
             }
         });
     </script>

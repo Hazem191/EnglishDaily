@@ -8,7 +8,7 @@
    ======================================== */
 
 const DB_KEY = 'daily_english_db';
-const DB_VERSION = '11';  // bundled Redis seed + empty-server recovery
+const DB_VERSION = '12';  // server-only auth (passwords not in client DB)
 const DB_VER_KEY = 'daily_english_db_version';
 const API_SECRET = 'daily-english-secure-2025-key'; // ← Must match api.php
 const API_TIMEOUT_MS = 25000;
@@ -571,21 +571,43 @@ const MockAuth = {
 
             if (response.ok) {
                 const user = await response.json();
-                this.currentUser = { uid: user.uid, email: user.email };
+                this.currentUser = {
+                    uid: user.uid,
+                    email: user.email,
+                    role: user.role,
+                    name: user.name || ''
+                };
                 safeStorageSet('logged_user', JSON.stringify(this.currentUser));
                 await DB.reloadFromServer();
-                return { user: this.currentUser };
+                DB.serverReachable = true;
+                DB.lastSyncError = null;
+                return { user: this.currentUser, role: user.role };
             }
+
+            const errBody = await response.json().catch(() => ({}));
 
             if (response.status === 401) {
                 throw { code: 'auth/wrong-password', message: 'Incorrect email or password.' };
             }
+
+            throw {
+                code: 'auth/server-error',
+                message: errBody.error || `Login failed (HTTP ${response.status}).`
+            };
         } catch (e) {
             if (e?.code) throw e;
-            console.warn('Server auth unavailable, trying local fallback:', e?.message || e);
-        }
+            console.warn('Server auth unavailable:', e?.message || e);
 
-        return this._localSignIn(email, password);
+            const isLocalDev = ['localhost', '127.0.0.1'].includes(location.hostname);
+            if (isLocalDev && !DB.serverReachable) {
+                return this._localSignIn(email, password);
+            }
+
+            throw {
+                code: 'auth/network',
+                message: 'Cannot reach server. Check your internet connection.'
+            };
+        }
     },
 
     async _localSignIn(email, password) {
