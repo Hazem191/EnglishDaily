@@ -148,9 +148,8 @@ const DB = {
         this.initPromise = (async () => {
             const storedVersion = safeStorageGet(DB_VER_KEY);
             if (storedVersion !== DB_VERSION) {
-                console.warn(`⚠️ DB version changed (${storedVersion} → ${DB_VERSION}). Refreshing...`);
+                console.warn(`⚠️ DB version changed (${storedVersion} → ${DB_VERSION}). Refreshing cache...`);
                 safeStorageRemove(DB_KEY);
-                safeStorageRemove('logged_user');
             }
 
             const localData = safeStorageGet(DB_KEY);
@@ -576,16 +575,26 @@ class MockRef {
 }
 
 /* ── Mock Auth Module ── */
-const MockAuth = {
-    currentUser: (() => {
-        try {
-            return JSON.parse(safeStorageGet('logged_user') || 'null');
-        } catch {
-            return null;
-        }
-    })(),
+function readLoggedUser() {
+    try {
+        return JSON.parse(safeStorageGet('logged_user') || 'null');
+    } catch {
+        return null;
+    }
+}
 
-    onAuthStateChanged(callback) { setTimeout(() => callback(this.currentUser), 50); },
+const MockAuth = {
+    get currentUser() {
+        return readLoggedUser();
+    },
+    set currentUser(value) {
+        if (value) safeStorageSet('logged_user', JSON.stringify(value));
+        else safeStorageRemove('logged_user');
+    },
+
+    onAuthStateChanged(callback) {
+        setTimeout(() => callback(readLoggedUser()), 50);
+    },
 
     async signInWithEmailAndPassword(email, password) {
         await DB.initPromise;
@@ -813,26 +822,39 @@ window.requireAuth = (role, cb) => {
     auth.onAuthStateChanged(async (u) => {
         if (!u) { window.location.href = 'login.html'; return; }
 
-        // Wait for DB to finish its initial load from the server
         await DB.initPromise;
 
-        const d = DB.get();
-        const isAdmin   = !!d.users?.admins?.[u.uid];
-        const isStudent = !!d.users?.students?.[u.uid];
+        let d = DB.get();
+        let isAdmin = !!d.users?.admins?.[u.uid];
+        let isStudent = !!d.users?.students?.[u.uid];
 
         if (!isAdmin && !isStudent) {
-            auth.signOut();
-            return;
+            await DB.reloadFromServer();
+            d = DB.get();
+            isAdmin = !!d.users?.admins?.[u.uid];
+            isStudent = !!d.users?.students?.[u.uid];
         }
 
-        const actualRole = isAdmin ? 'teacher' : 'student';
+        const sessionRole =
+            u.role === 'teacher' ? 'teacher' :
+            u.role === 'student' ? 'student' : null;
+        const actualRole = isAdmin ? 'teacher' : (isStudent ? 'student' : sessionRole);
+
+        if (!actualRole) {
+            auth.currentUser = null;
+            window.location.href = 'login.html';
+            return;
+        }
 
         if (role && actualRole !== role) {
             window.location.href = actualRole === 'teacher' ? 'teacher.html' : 'student.html';
             return;
         }
 
-        const userData = isAdmin ? d.users.admins[u.uid] : d.users.students[u.uid];
+        const userData =
+            (actualRole === 'teacher' ? d.users?.admins?.[u.uid] : d.users?.students?.[u.uid]) ||
+            { id: u.uid, email: u.email, name: u.name || '', role: actualRole };
+
         hideLoading();
         cb({ id: u.uid, ...userData, role: actualRole });
     });

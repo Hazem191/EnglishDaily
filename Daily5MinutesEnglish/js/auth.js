@@ -13,10 +13,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Wait for DB to be fully loaded before reading it (race-condition fix)
             await DB.initPromise;
             const data = DB.get();
-            if (data.users?.admins?.[user.uid]) {
+            if (data.users?.admins?.[user.uid] || user.role === 'teacher') {
                 window.location.href = 'teacher.html'; return;
             }
-            if (data.users?.students?.[user.uid]) {
+            if (data.users?.students?.[user.uid] || user.role === 'student') {
                 window.location.href = 'student.html'; return;
             }
         } catch (e) { console.error('Auth redirect check:', e); }
