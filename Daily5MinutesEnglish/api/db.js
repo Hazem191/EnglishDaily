@@ -8,6 +8,8 @@ function setCors(res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With, X-API-Token, X-Requesting-Admin');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
 }
 
 function isAuthorized(req) {
@@ -15,7 +17,7 @@ function isAuthorized(req) {
   return token === API_SECRET;
 }
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   setCors(res);
 
   if (req.method === 'OPTIONS') {
@@ -66,4 +68,14 @@ module.exports = async function handler(req, res) {
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
+}
+
+handler.config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '4mb'
+    }
+  }
 };
+
+module.exports = handler;

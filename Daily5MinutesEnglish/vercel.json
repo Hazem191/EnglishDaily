@@ -18,6 +18,12 @@
     { "src": "/api/(.*)", "dest": "/api/$1" },
     { "src": "/(.*)", "dest": "/$1" }
   ],
+  "functions": {
+    "api/db.js": {
+      "maxDuration": 30,
+      "memory": 256
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",

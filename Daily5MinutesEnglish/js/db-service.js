@@ -11,9 +11,92 @@ const DB_KEY = 'daily_english_db';
 const DB_VERSION = '9';   // bumped: plaintext password migration at init
 const DB_VER_KEY = 'daily_english_db_version';
 const API_SECRET = 'daily-english-secure-2025-key'; // ← Must match api.php
+const API_TIMEOUT_MS = 25000;
+const API_RETRIES = 3;
+
+let _resolvedApiUrl = null;
+
+function safeStorageGet(key) {
+    try {
+        return localStorage.getItem(key);
+    } catch (e) {
+        console.warn('localStorage read blocked:', e);
+        return null;
+    }
+}
+
+function safeStorageSet(key, value) {
+    try {
+        localStorage.setItem(key, value);
+        return true;
+    } catch (e) {
+        console.error('localStorage write blocked:', e);
+        return false;
+    }
+}
+
+function safeStorageRemove(key) {
+    try {
+        localStorage.removeItem(key);
+    } catch (_) { /* ignore */ }
+}
+
+async function getApiUrl() {
+    if (_resolvedApiUrl) return _resolvedApiUrl;
+    const candidates = ['/api/db', 'api.php'];
+    for (const url of candidates) {
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 8000);
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: { 'X-API-Token': API_SECRET },
+                cache: 'no-store',
+                signal: controller.signal
+            });
+            clearTimeout(timer);
+            if (response.ok) {
+                _resolvedApiUrl = url;
+                return url;
+            }
+        } catch (_) { /* try next */ }
+    }
+    _resolvedApiUrl = 'api.php';
+    return _resolvedApiUrl;
+}
+
+async function fetchWithRetry(url, options = {}, retries = API_RETRIES) {
+    let lastError;
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+        try {
+            const response = await fetch(url, {
+                ...options,
+                cache: 'no-store',
+                signal: controller.signal
+            });
+            clearTimeout(timer);
+            return response;
+        } catch (err) {
+            clearTimeout(timer);
+            lastError = err;
+            if (attempt < retries) {
+                await new Promise((r) => setTimeout(r, 800 * attempt));
+            }
+        }
+    }
+    throw lastError || new Error('Network request failed');
+}
 
 /* ── Password Hashing (SHA-256 via built-in Web Crypto API) ── */
 async function hashPassword(password) {
+    if (!window.isSecureContext || !window.crypto?.subtle) {
+        throw {
+            code: 'auth/unsupported',
+            message: 'Open the site with HTTPS (not http) to sign in on mobile.'
+        };
+    }
     const encoder = new TextEncoder();
     const data = encoder.encode(password);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -56,46 +139,47 @@ const DB = {
     listeners: [],
     initPromise: null,
     _pollInterval: null,
+    serverReachable: false,
+    lastSyncError: null,
 
     async init() {
         if (this.initPromise) return this.initPromise;
 
         this.initPromise = (async () => {
-            const storedVersion = localStorage.getItem(DB_VER_KEY);
+            const storedVersion = safeStorageGet(DB_VER_KEY);
             if (storedVersion !== DB_VERSION) {
                 console.warn(`⚠️ DB version changed (${storedVersion} → ${DB_VERSION}). Refreshing...`);
-                localStorage.removeItem(DB_KEY);
-                localStorage.removeItem('logged_user');
+                safeStorageRemove(DB_KEY);
+                safeStorageRemove('logged_user');
             }
 
-            const localData = localStorage.getItem(DB_KEY);
+            const localData = safeStorageGet(DB_KEY);
             let remoteData = null;
 
             try {
-                // 1. Try authenticated API call
-                const response = await fetch('api.php', {
+                const apiUrl = await getApiUrl();
+                const response = await fetchWithRetry(apiUrl, {
                     headers: { 'X-API-Token': API_SECRET }
                 });
                 if (response.ok) {
                     const text = await response.text();
                     try {
                         remoteData = JSON.parse(text);
-                        console.log('📂 Synced with server (api.php)');
+                        this.serverReachable = true;
+                        this.lastSyncError = null;
+                        console.log('📂 Synced with server (' + apiUrl + ')');
                     } catch (e) {
-                        console.warn('api.php returned non-JSON content.');
+                        console.warn('API returned non-JSON content.');
+                        this.lastSyncError = 'invalid-json';
                     }
-                }
-
-                // 2. Fallback to direct db.json
-                if (!remoteData || remoteData.error) {
-                    const directRes = await fetch('db.json');
-                    if (directRes.ok) {
-                        remoteData = await directRes.json();
-                        console.log('📂 Loaded from db.json directly');
-                    }
+                } else {
+                    this.lastSyncError = `HTTP ${response.status}`;
+                    console.warn('API GET failed:', response.status);
                 }
             } catch (e) {
-                console.warn('Server sync unavailable. Using local cache...');
+                this.serverReachable = false;
+                this.lastSyncError = e?.name === 'AbortError' ? 'timeout' : 'network';
+                console.warn('Server sync unavailable:', e?.message || e);
             }
 
             let finalData;
@@ -103,7 +187,7 @@ const DB = {
 
             if (remoteData && !remoteData.error) {
                 finalData = _deepMergeDefaults(remoteData, defaultData);
-                if (currentLocal) finalData = _deepMergeDefaults(currentLocal, finalData);
+                if (currentLocal) finalData = _deepMergeUsers(currentLocal, finalData);
             } else if (currentLocal) {
                 finalData = _deepMergeDefaults(currentLocal, defaultData);
             } else {
@@ -112,10 +196,17 @@ const DB = {
 
             _ensureSeedAccounts(finalData);
             const upgraded = await _upgradePlaintextPasswords(finalData);
-            localStorage.setItem(DB_KEY, JSON.stringify(finalData));
-            localStorage.setItem(DB_VER_KEY, DB_VERSION);
+            if (!safeStorageSet(DB_KEY, JSON.stringify(finalData))) {
+                showToast(
+                    window.ui?.lang === 'ar'
+                        ? 'تعذر حفظ البيانات محلياً. أغلق وضع التصفح الخاص أو اسمح بالتخزين.'
+                        : 'Could not save data locally. Disable private browsing or allow storage.',
+                    'error'
+                );
+            }
+            safeStorageSet(DB_VER_KEY, DB_VERSION);
             if (upgraded) {
-                try { await DB.save(finalData); } catch (e) { console.warn('Password upgrade sync failed:', e); }
+                try { await DB.save(finalData, { silent: true }); } catch (e) { console.warn('Password upgrade sync failed:', e); }
             }
             this.notify();
         })();
@@ -124,34 +215,63 @@ const DB = {
     },
 
     get() {
-        return JSON.parse(localStorage.getItem(DB_KEY)) || defaultData;
+        const raw = safeStorageGet(DB_KEY);
+        return raw ? JSON.parse(raw) : defaultData;
     },
 
-    async save(data) {
-        localStorage.setItem(DB_KEY, JSON.stringify(data));
+    async save(data, options = {}) {
+        if (!safeStorageSet(DB_KEY, JSON.stringify(data))) {
+            throw new Error('localStorage blocked');
+        }
         this.notify();
-        await this.syncWithServer(data);
+        const synced = await this.syncWithServer(data);
+        if (!synced && !options.silent) {
+            const isAr = window.ui?.lang === 'ar';
+            showToast(
+                isAr
+                    ? 'تعذر الحفظ على السيرفر. تحقق من الإنترنت وحاول مرة أخرى.'
+                    : 'Could not save to server. Check your connection and try again.',
+                'error'
+            );
+        }
+        return synced;
     },
 
     async syncWithServer(data) {
         try {
+            const apiUrl = await getApiUrl();
             const headers = {
                 'Content-Type': 'application/json',
                 'X-API-Token': API_SECRET
             };
             try {
-                const loggedUser = JSON.parse(localStorage.getItem('logged_user') || 'null');
+                const loggedUser = JSON.parse(safeStorageGet('logged_user') || 'null');
                 if (loggedUser?.uid && data?.users?.admins?.[loggedUser.uid]) {
                     headers['X-Requesting-Admin'] = loggedUser.uid;
                 }
             } catch (_) { /* ignore */ }
 
-            await fetch('api.php', {
+            const response = await fetchWithRetry(apiUrl, {
                 method: 'POST',
                 headers,
                 body: JSON.stringify(data)
             });
-        } catch (e) { /* silent — offline mode */ }
+
+            if (!response.ok) {
+                this.serverReachable = false;
+                this.lastSyncError = `HTTP ${response.status}`;
+                return false;
+            }
+
+            this.serverReachable = true;
+            this.lastSyncError = null;
+            return true;
+        } catch (e) {
+            this.serverReachable = false;
+            this.lastSyncError = e?.name === 'AbortError' ? 'timeout' : 'network';
+            console.warn('Sync failed:', e?.message || e);
+            return false;
+        }
     },
 
     notify() {
@@ -173,9 +293,10 @@ const DB = {
         if (this._pollInterval) clearInterval(this._pollInterval);
         this._pollInterval = setInterval(async () => {
             try {
-                const response = await fetch('api.php', {
+                const apiUrl = await getApiUrl();
+                const response = await fetchWithRetry(apiUrl, {
                     headers: { 'X-API-Token': API_SECRET }
-                });
+                }, 1);
                 if (!response.ok) return;
                 const text = await response.text();
                 const remoteData = JSON.parse(text);
@@ -188,8 +309,8 @@ const DB = {
                 const localStudentsStr = JSON.stringify(currentLocal.users?.students);
 
                 if (remoteResultsStr !== localResultsStr || remoteStudentsStr !== localStudentsStr) {
-                    const merged = _deepMergeDefaults(currentLocal, _deepMergeDefaults(remoteData, defaultData));
-                    localStorage.setItem(DB_KEY, JSON.stringify(merged));
+                    const merged = _deepMergeUsers(currentLocal, _deepMergeDefaults(remoteData, defaultData));
+                    safeStorageSet(DB_KEY, JSON.stringify(merged));
                     this.notify();
                     console.log('🔄 Real-time: data refreshed from server');
                 }
@@ -254,6 +375,23 @@ function _deepMergeDefaults(target, defaults) {
         ) {
             result[key] = _deepMergeDefaults(result[key], defaults[key]);
         }
+    }
+    return result;
+}
+
+/** Keep local user accounts when merging with server (important on mobile) */
+function _deepMergeUsers(local, remote) {
+    const result = _deepMergeDefaults(remote, defaultData);
+    if (local.users?.students) {
+        result.users = result.users || {};
+        result.users.students = { ...(result.users.students || {}), ...local.users.students };
+    }
+    if (local.users?.admins) {
+        result.users = result.users || {};
+        result.users.admins = { ...(result.users.admins || {}), ...local.users.admins };
+    }
+    if (local.dailyResults) {
+        result.dailyResults = { ...(result.dailyResults || {}), ...local.dailyResults };
     }
     return result;
 }
@@ -368,7 +506,13 @@ class MockRef {
 
 /* ── Mock Auth Module ── */
 const MockAuth = {
-    currentUser: JSON.parse(localStorage.getItem('logged_user')) || null,
+    currentUser: (() => {
+        try {
+            return JSON.parse(safeStorageGet('logged_user') || 'null');
+        } catch {
+            return null;
+        }
+    })(),
 
     onAuthStateChanged(callback) { setTimeout(() => callback(this.currentUser), 50); },
 
@@ -413,7 +557,7 @@ const MockAuth = {
         }
 
         this.currentUser = { uid, email: user.email };
-        localStorage.setItem('logged_user', JSON.stringify(this.currentUser));
+        safeStorageSet('logged_user', JSON.stringify(this.currentUser));
         return { user: this.currentUser };
     },
 
@@ -429,13 +573,13 @@ const MockAuth = {
         }
         const uid = 'u-' + Math.random().toString(36).substr(2, 9);
         this.currentUser = { uid, email };
-        localStorage.setItem('logged_user', JSON.stringify(this.currentUser));
+        safeStorageSet('logged_user', JSON.stringify(this.currentUser));
         return { user: this.currentUser };
     },
 
     async signOut() {
         this.currentUser = null;
-        localStorage.removeItem('logged_user');
+        safeStorageRemove('logged_user');
         window.location.href = 'login.html';
     },
 

@@ -64,6 +64,12 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.innerHTML = '<div class="spinner spinner-sm"></div> Signing in...';
 
             try {
+                await DB.initPromise;
+
+                if (!DB.serverReachable && DB.lastSyncError) {
+                    console.warn('Server sync issue:', DB.lastSyncError);
+                }
+
                 const credential = await auth.signInWithEmailAndPassword(email, password);
                 const uid = credential.user.uid;
 
@@ -94,6 +100,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     'auth/too-many-requests': 'Too many attempts. Try again later.',
                     'auth/invalid-credential': 'Incorrect email or password.',
                     'auth/user-not-found': 'Incorrect email or password.',
+                    'auth/unsupported': window.ui?.lang === 'ar'
+                        ? 'افتح الموقع عبر HTTPS (الرابط الرسمي على Vercel).'
+                        : 'Open the site via HTTPS (official Vercel link).',
                 };
                 errorEl.textContent = msgs[error.code] || 'Incorrect email or password.';
             } finally {
@@ -142,11 +151,11 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.innerHTML = '<div class="spinner spinner-sm"></div> Creating account...';
 
             try {
+                await DB.initPromise;
+
                 const credential = await auth.createUserWithEmailAndPassword(email, password);
                 const uid = credential.user.uid;
 
-                // All self-registrations are students
-                // Hash the password with SHA-256 before storage (never store plain text)
                 const hashedPw = await hashPassword(password);
                 await rtdb.ref(`users/students/${uid}`).set({
                     id: uid,
@@ -157,6 +166,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     totalScore: 0,
                     createdAt: Date.now()
                 });
+
+                if (!DB.serverReachable) {
+                    errorEl.textContent = window.ui?.lang === 'ar'
+                        ? 'تم إنشاء الحساب محلياً لكن فشل الحفظ على السيرفر. تحقق من الإنترنت وأعد المحاولة.'
+                        : 'Account created locally but server save failed. Check connection and try again.';
+                    auth.signOut();
+                    return;
+                }
 
                 showToast('Account created. Redirecting…', 'success');
                 setTimeout(() => window.location.href = 'student.html', 800);
