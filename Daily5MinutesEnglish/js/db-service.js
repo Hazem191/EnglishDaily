@@ -837,6 +837,39 @@ window.hideLoading = () => {
 
 window.getInitials = (n) => !n ? '?' : n.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
+/** Merge session login data with stored DB profile (server may only have scores). */
+window.mergeUserProfile = function mergeUserProfile(session, stored) {
+    const s = stored && typeof stored === 'object' ? stored : {};
+    const id = session.id || session.uid || s.id;
+    return {
+        ...session,
+        ...s,
+        id,
+        name: s.name || session.name || '',
+        email: s.email || session.email || '',
+        role: session.role || s.role || 'student'
+    };
+};
+
+/** Write missing name/email from session back into local DB + server. */
+window.repairStudentProfile = async function repairStudentProfile(user) {
+    if (!user?.id) return;
+    const data = DB.get();
+    const student = data.users?.students?.[user.id];
+    if (!student) return;
+
+    let changed = false;
+    if (!student.name && user.name) {
+        student.name = user.name;
+        changed = true;
+    }
+    if (!student.email && user.email) {
+        student.email = user.email;
+        changed = true;
+    }
+    if (changed) await DB.save(data, { silent: true });
+};
+
 /**
  * requireAuth — Fixed race condition:
  * Always awaits DB.initPromise before reading user data so the DB is
@@ -876,12 +909,14 @@ window.requireAuth = (role, cb) => {
             return;
         }
 
-        const userData =
-            (actualRole === 'teacher' ? d.users?.admins?.[u.uid] : d.users?.students?.[u.uid]) ||
-            { id: u.uid, email: u.email, name: u.name || '', role: actualRole };
+        const dbUser = actualRole === 'teacher' ? d.users?.admins?.[u.uid] : d.users?.students?.[u.uid];
+        const userData = mergeUserProfile(
+            { id: u.uid, email: u.email || '', name: u.name || '', role: actualRole },
+            dbUser
+        );
 
         hideLoading();
-        cb({ id: u.uid, ...userData, role: actualRole });
+        cb(userData);
     });
 };
 

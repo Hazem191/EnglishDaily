@@ -72,15 +72,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function initStudentPage(userData) {
     await DB.reloadFromServer();
-    const fresh = DB.get().users?.students?.[userData.id] || userData;
-    currentUser = { id: userData.id, ...fresh };
+    currentUser = mergeUserProfile(userData, DB.get().users?.students?.[userData.id]);
+    await repairStudentProfile(currentUser);
 
-    // UI updates
+    const displayName = currentUser.name || 'Student';
     const welcomeMsg = document.getElementById('welcome-msg');
     if (welcomeMsg) {
-        welcomeMsg.setAttribute('data-en', `Hello, ${currentUser.name}`);
-        welcomeMsg.setAttribute('data-ar', `مرحباً، ${currentUser.name}`);
-        welcomeMsg.textContent = `Hello, ${currentUser.name}`;
+        welcomeMsg.setAttribute('data-en', `Hello, ${displayName}`);
+        welcomeMsg.setAttribute('data-ar', `مرحباً، ${displayName}`);
+        welcomeMsg.textContent = `Hello, ${displayName}`;
     }
 
     const scoreDisplay = document.getElementById('nav-score-display');
@@ -90,7 +90,7 @@ async function initStudentPage(userData) {
     if (navAvatar) navAvatar.textContent = getInitials(currentUser.name);
 
     const navName = document.getElementById('nav-user-name');
-    if (navName) navName.textContent = currentUser.name;
+    if (navName) navName.textContent = displayName;
 
     // Profile section
     const profileName = document.getElementById('profile-name');

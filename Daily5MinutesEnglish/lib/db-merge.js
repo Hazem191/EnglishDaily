@@ -10,6 +10,8 @@ function mergeUserRecord(existing, incoming, role) {
   if (!hasIncomingPassword && existing?.password) {
     merged.password = existing.password;
   }
+  if (!merged.name && existing?.name) merged.name = existing.name;
+  if (!merged.email && existing?.email) merged.email = existing.email;
   return merged;
 }
 
