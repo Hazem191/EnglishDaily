@@ -71,24 +71,26 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initStudentPage(userData) {
-    currentUser = userData;
+    await DB.reloadFromServer();
+    const fresh = DB.get().users?.students?.[userData.id] || userData;
+    currentUser = { id: userData.id, ...fresh };
 
     // UI updates
     const welcomeMsg = document.getElementById('welcome-msg');
     if (welcomeMsg) {
-        welcomeMsg.setAttribute('data-en', `Hello, ${userData.name}`);
-        welcomeMsg.setAttribute('data-ar', `مرحباً، ${userData.name}`);
-        welcomeMsg.textContent = `Hello, ${userData.name}`;
+        welcomeMsg.setAttribute('data-en', `Hello, ${currentUser.name}`);
+        welcomeMsg.setAttribute('data-ar', `مرحباً، ${currentUser.name}`);
+        welcomeMsg.textContent = `Hello, ${currentUser.name}`;
     }
 
     const scoreDisplay = document.getElementById('nav-score-display');
-    if (scoreDisplay) scoreDisplay.textContent = `${userData.totalScore || 0} pts`;
+    if (scoreDisplay) scoreDisplay.textContent = `${currentUser.totalScore || 0} pts`;
 
     const navAvatar = document.getElementById('nav-avatar');
-    if (navAvatar) navAvatar.textContent = getInitials(userData.name);
+    if (navAvatar) navAvatar.textContent = getInitials(currentUser.name);
 
     const navName = document.getElementById('nav-user-name');
-    if (navName) navName.textContent = userData.name;
+    if (navName) navName.textContent = currentUser.name;
 
     // Profile section
     const profileName = document.getElementById('profile-name');
@@ -96,11 +98,11 @@ async function initStudentPage(userData) {
     const statsTotal = document.getElementById('stats-total-score');
     const statsCount = document.getElementById('stats-count');
 
-    if (profileName) profileName.value = userData.name || '';
-    if (profileEmail) profileEmail.value = userData.email || '';
-    if (statsTotal) statsTotal.textContent = userData.totalScore || 0;
+    if (profileName) profileName.value = currentUser.name || '';
+    if (profileEmail) profileEmail.value = currentUser.email || '';
+    if (statsTotal) statsTotal.textContent = currentUser.totalScore || 0;
 
-    const resultsSnap = await rtdb.ref(`dailyResults/${userData.id}`).once('value');
+    const resultsSnap = await rtdb.ref(`dailyResults/${currentUser.id}`).once('value');
     if (statsCount) statsCount.textContent = resultsSnap.numChildren() || 0;
 
     // Check if quiz done today
@@ -317,6 +319,12 @@ window.submitQuiz = async function () {
         const currentTotal = userData.totalScore || 0;
 
         await userRef.update({ totalScore: currentTotal + score });
+
+        if (!DB.serverReachable || DB.lastSyncError) {
+            throw new Error('Server sync failed');
+        }
+
+        await DB.reloadFromServer();
 
         console.log('Quiz submitted successfully. Score:', score);
         hideLoading();

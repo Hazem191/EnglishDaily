@@ -27,6 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function initTeacherPage(userData) {
     currentTeacher = userData;
+    await DB.reloadFromServer();
+
     const navName = document.getElementById('nav-user-name');
     if (navName) navName.textContent = userData.name;
 

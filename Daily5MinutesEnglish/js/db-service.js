@@ -8,7 +8,7 @@
    ======================================== */
 
 const DB_KEY = 'daily_english_db';
-const DB_VERSION = '12';  // server-only auth (passwords not in client DB)
+const DB_VERSION = '13';  // sync fix: profile data without passwords
 const DB_VER_KEY = 'daily_english_db_version';
 const API_SECRET = 'daily-english-secure-2025-key'; // ← Must match api.php
 const API_TIMEOUT_MS = 25000;
@@ -331,7 +331,7 @@ const DB = {
      * Only triggers notify() when dailyResults or students actually changed.
      * This gives real-time-like behaviour for multi-user shared hosting.
      */
-    startPolling(intervalMs = 15000) {
+    startPolling(intervalMs = 8000) {
         if (this._pollInterval) clearInterval(this._pollInterval);
         this._pollInterval = setInterval(async () => {
             try {
@@ -412,21 +412,13 @@ function _prepareSyncPayload(data) {
     const payload = JSON.parse(JSON.stringify(data));
     if (!payload.users) return payload;
 
+    // Send student/admin profiles (scores, names) but never passwords
     for (const role of ['admins', 'students']) {
         const bucket = payload.users[role];
         if (!bucket) continue;
-        for (const [id, user] of Object.entries({ ...bucket })) {
-            if (!user?.password) {
-                delete bucket[id];
-            }
+        for (const id of Object.keys(bucket)) {
+            if (bucket[id]) delete bucket[id].password;
         }
-        if (Object.keys(bucket).length === 0) {
-            delete payload.users[role];
-        }
-    }
-
-    if (payload.users && !payload.users.admins && !payload.users.students) {
-        delete payload.users;
     }
 
     return payload;
@@ -717,8 +709,14 @@ const MockAuth = {
 DB.initPromise = DB.init();
 DB.listenToStorage();
 
-// Start polling once init is done (15s interval → cross-device sync)
-DB.initPromise.then(() => DB.startPolling(15000));
+// Start polling once init is done (8s interval → cross-device sync)
+DB.initPromise.then(() => {
+    DB.startPolling(8000);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible') return;
+        DB.reloadFromServer().then((ok) => { if (ok) DB.notify(); });
+    });
+});
 
 window.firebase = { initializeApp: () => { }, auth: () => MockAuth, database: () => new MockRef() };
 window.auth = MockAuth;
@@ -871,6 +869,7 @@ window.exportDB = () => {
 
 window.getOrGenerateDailyExam = async () => {
     await DB.initPromise;
+    await DB.reloadFromServer();
     const d = DB.get();
     const today = getTodayString();
     const cfg = d.config || {};
@@ -924,4 +923,4 @@ window.setQuizSize = async (n) => {
     await DB.save(d);
 };
 
-console.log('🚀 DB Service v8 — Secured | Hashed Passwords | Server Polling');
+console.log('🚀 DB Service v13 — Cross-device sync | Server polling 8s');
