@@ -189,7 +189,7 @@ const DB = {
 
             if (remoteData && !remoteData.error) {
                 // Server is the source of truth when reachable (fixes phone/laptop drift)
-                finalData = _deepMergeDefaults(remoteData, defaultData);
+                finalData = _applyRemoteData(remoteData, currentLocal);
             } else if (currentLocal) {
                 finalData = _deepMergeDefaults(currentLocal, defaultData);
             } else {
@@ -265,7 +265,8 @@ const DB = {
             const remoteData = JSON.parse(await response.text());
             if (!remoteData || remoteData.error) return false;
 
-            const finalData = _deepMergeDefaults(remoteData, defaultData);
+            const currentLocal = this.get();
+            const finalData = _applyRemoteData(remoteData, currentLocal);
             safeStorageSet(DB_KEY, JSON.stringify(finalData));
             safeStorageSet(DB_VER_KEY, DB_VERSION);
             this.serverReachable = true;
@@ -354,7 +355,7 @@ const DB = {
                 const localSnap = snapshot(currentLocal);
 
                 if (remoteSnap !== localSnap) {
-                    const merged = _deepMergeDefaults(remoteData, defaultData);
+                    const merged = _applyRemoteData(remoteData, currentLocal);
                     safeStorageSet(DB_KEY, JSON.stringify(merged));
                     this.serverReachable = true;
                     this.notify();
@@ -422,6 +423,32 @@ function _prepareSyncPayload(data) {
     }
 
     return payload;
+}
+
+function _mergeDailyResults(remote, local) {
+    const result = JSON.parse(JSON.stringify(remote || {}));
+    if (!local || typeof local !== 'object') return result;
+    for (const [uid, dates] of Object.entries(local)) {
+        if (!dates || typeof dates !== 'object') continue;
+        if (!result[uid]) result[uid] = {};
+        for (const [date, res] of Object.entries(dates)) {
+            const existing = result[uid][date];
+            const localTs = res?.timestamp || 0;
+            const remoteTs = existing?.timestamp || 0;
+            if (!existing || localTs >= remoteTs) {
+                result[uid][date] = res;
+            }
+        }
+    }
+    return result;
+}
+
+function _applyRemoteData(remoteData, localData = null) {
+    const finalData = _deepMergeDefaults(remoteData, defaultData);
+    if (localData?.dailyResults) {
+        finalData.dailyResults = _mergeDailyResults(finalData.dailyResults, localData.dailyResults);
+    }
+    return finalData;
 }
 
 function _deepMergeDefaults(target, defaults) {
@@ -713,7 +740,7 @@ DB.listenToStorage();
 DB.initPromise.then(() => {
     DB.startPolling(8000);
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState !== 'visible') return;
+        if (document.visibilityState !== 'visible' || window.__quizActive) return;
         DB.reloadFromServer().then((ok) => { if (ok) DB.notify(); });
     });
 });
@@ -869,7 +896,6 @@ window.exportDB = () => {
 
 window.getOrGenerateDailyExam = async () => {
     await DB.initPromise;
-    await DB.reloadFromServer();
     const d = DB.get();
     const today = getTodayString();
     const cfg = d.config || {};
@@ -891,7 +917,7 @@ window.getOrGenerateDailyExam = async () => {
     cfg.currentExamDate = today;
     cfg.currentExamQuestions = selected;
     d.config = cfg;
-    DB.save(d);
+    await DB.save(d, { silent: true });
     return selected.map(id => ({ id, ...allQsMap[id] }));
 };
 

@@ -111,9 +111,11 @@ async function initStudentPage(userData) {
         quizState = 'completed';
         cachedResults = alreadyDone;
         stopQuizTimer();
+        window.__quizActive = false;
         showAlreadyCompleted(alreadyDone);
     } else {
         quizState = 'playing';
+        window.__quizActive = true;
         await loadDailyQuestions();
     }
 }
@@ -289,12 +291,9 @@ window.submitQuiz = async function () {
     isSubmitting = true;
     stopQuizTimer();
 
-    // Visually disable the Finish button immediately
     const finishBtn = document.querySelector('#quiz-area .btn-primary');
     if (finishBtn) { finishBtn.disabled = true; finishBtn.textContent = 'Submitting...'; }
 
-    console.log('Submitting quiz...');
-    // Calculate score
     let score = 0;
     dailyQuestions.forEach(q => {
         const given = (answers[q.id] || '').toString().toLowerCase().trim();
@@ -305,36 +304,44 @@ window.submitQuiz = async function () {
     showLoading();
     const today = getTodayString();
     try {
-        // 1. Save results for this user/date
-        await rtdb.ref(`dailyResults/${currentUser.id}/${today}`).set({
+        const data = DB.get();
+        if (!data.dailyResults) data.dailyResults = {};
+        if (!data.dailyResults[currentUser.id]) data.dailyResults[currentUser.id] = {};
+        data.dailyResults[currentUser.id][today] = {
             score,
             total: dailyQuestions.length,
             timestamp: Date.now()
-        });
+        };
 
-        // 2. Update user's cumulative total score
-        const userRef = rtdb.ref(`users/students/${currentUser.id}`);
-        const userSnap = await userRef.once('value');
-        const userData = userSnap.val() || {};
-        const currentTotal = userData.totalScore || 0;
-
-        await userRef.update({ totalScore: currentTotal + score });
-
-        if (!DB.serverReachable || DB.lastSyncError) {
-            throw new Error('Server sync failed');
+        const student = data.users?.students?.[currentUser.id];
+        if (student) {
+            student.totalScore = (student.totalScore || 0) + score;
+            currentUser.totalScore = student.totalScore;
         }
 
-        await DB.reloadFromServer();
+        const synced = await DB.save(data);
 
         console.log('Quiz submitted successfully. Score:', score);
         hideLoading();
 
+        if (!synced) {
+            const isAr = window.ui?.lang === 'ar';
+            showToast(
+                isAr
+                    ? 'تم الحفظ محلياً. سيتم المزامنة مع السيرفر عند توفر الإنترنت.'
+                    : 'Saved locally. Will sync to server when connection is available.',
+                'info'
+            );
+            DB.syncWithServer(DB.get()).catch(() => {});
+        }
+
+        window.__quizActive = false;
         quizState = 'results';
         cachedResults = { score, total: dailyQuestions.length };
         showResult(score, dailyQuestions.length);
     } catch (e) {
         hideLoading();
-        isSubmitting = false; // allow retry on network error
+        isSubmitting = false;
         if (finishBtn) { finishBtn.disabled = false; finishBtn.textContent = 'Finish ✓'; }
         console.error('Submit error:', e);
         showToast('Error saving result. Please try again.', 'error');
@@ -397,7 +404,7 @@ function showResult(score, total) {
 
     // Update global points display
     const scoreDisplay = document.getElementById('nav-score-display');
-    if (scoreDisplay) scoreDisplay.textContent = `${(currentUser.totalScore || 0) + score} pts`;
+    if (scoreDisplay) scoreDisplay.textContent = `${currentUser.totalScore || 0} pts`;
 }
 
 // Profile update
